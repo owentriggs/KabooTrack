@@ -1,0 +1,806 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Kaboo Memory</title>
+<meta name="description" content="A card tracker for Kaboo (Cabo): record the cards you've seen, swaps, the discard pile and the odds.">
+<meta name="theme-color" content="#0e1714">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kaboo">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: one fixed screen. Header, player chips, name + hand total, a swipeable pager with one board per player (any number of cards), a hint line, four actions. Rank picker is a bottom sheet, the rule book a full-screen reader with tabs, the welcome tour a centered dialog. Dim card-table palette, one clean sans. */
+:root{
+  --felt:#0e1714;
+  --panel:#15211d;
+  --line:#26352f;
+  --ink:#d9e0d6;
+  --dim:#8a9a91;
+  --back:#1a2924;
+  --back-line:#2b4037;
+  --face:#ece6d3;
+  --face-ink:#1a1a17;
+  --red-face:#a8322a;
+  --brass:#d1a84e;
+  --warn:#e8806f;
+  --ui:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{
+  margin:0;
+  background:var(--felt);color:var(--ink);font:400 14px/1.3 var(--ui);
+  padding-top:max(8px,env(safe-area-inset-top,0px));
+  padding-bottom:max(8px,env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;-webkit-user-select:none;
+  overflow:hidden;
+}
+button{font:inherit;color:inherit;touch-action:manipulation;cursor:pointer}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+button:disabled{cursor:default}
+
+.app{height:100%;max-width:440px;margin:0 auto;display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto auto;gap:8px}
+
+/* header */
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.brand{min-width:0}
+.brand h1{margin:0;font:800 23px/1 var(--ui);letter-spacing:-.01em}
+.brand small{display:block;margin-top:3px;font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap}
+.tools{display:flex;gap:6px}
+.tbtn{height:34px;min-width:34px;padding:0 13px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--ink);font-weight:600;font-size:13px}
+.tbtn.armed{background:var(--warn);border-color:var(--warn);color:var(--felt)}
+
+/* players */
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:1 1 0;min-width:52px;height:36px;padding:0 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--dim);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip.on{background:var(--ink);border-color:var(--ink);color:var(--felt);font-weight:700}
+.step{flex:0 0 36px;height:36px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--dim);font-size:18px;line-height:1}
+.step:disabled{opacity:.3}
+
+.strip{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.strip input{width:7.5em;min-width:0;background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;color:var(--brass);font:700 20px/1.2 var(--ui);padding:2px 0;user-select:text;-webkit-user-select:text}
+.sum{display:flex;align-items:baseline;gap:8px;min-width:0;white-space:nowrap}
+.sum b{font:800 22px/1 var(--ui);font-variant-numeric:tabular-nums}
+.sum span{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+
+/* boards */
+.pager{display:flex;min-height:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.pager::-webkit-scrollbar{display:none}
+.panel{flex:0 0 100%;min-width:0;height:100%;scroll-snap-align:start;scroll-snap-stop:always;container-type:size;display:flex;align-items:center;justify-content:center}
+.grid{display:grid;gap:12px;padding:5px}
+.empty{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:0 24px}
+.empty b{font:800 24px/1.1 var(--ui)}
+.empty span{font-size:14px;color:var(--dim);max-width:28ch}
+.card{position:relative;container-type:size;min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:0;border-radius:14px;border:1px solid var(--back-line);background-color:var(--back);background-image:repeating-linear-gradient(45deg,transparent 0 7px,var(--back-line) 7px 8px);color:var(--back-line)}
+.card .r{font-weight:800;font-size:min(42cqw,32cqh);line-height:1;letter-spacing:-.02em}
+.card .v{font-size:max(11px,9cqh);font-weight:600;opacity:.6;font-variant-numeric:tabular-nums}
+.card .q{font-weight:800;font-size:min(30cqw,22cqh);line-height:1;color:var(--dim);opacity:.5}
+.card.known{background-image:none;background-color:var(--face);border-color:var(--face);color:var(--face-ink)}
+.card.known .r.red{color:var(--red-face)}
+.card.sel{box-shadow:0 0 0 2px var(--felt),0 0 0 4px var(--brass)}
+
+/* bottom */
+.hint{min-height:18px;text-align:center;font-size:13px;color:var(--dim)}
+.hint.live{color:var(--brass)}
+.acts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.act{height:50px;padding:0 4px;border:1px solid var(--line);border-radius:12px;background:var(--panel);font-size:15px;font-weight:600}
+.act.on{background:var(--brass);border-color:var(--brass);color:var(--felt)}
+.act:disabled{opacity:.35}
+
+/* rank sheet */
+.sheet{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center;background:rgba(5,9,8,.62)}
+.sheet-p{width:100%;max-width:440px;background:var(--panel);border-top:1px solid var(--line);border-radius:18px 18px 0 0;padding-top:14px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));animation:up .18s ease-out}
+.sheet-h{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+.sheet-h h2{margin:0;font:700 18px/1.2 var(--ui)}
+.sheet-h button{height:34px;padding:0 13px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--ink);font-weight:600;font-size:13px}
+.skeys{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.skey{position:relative;height:54px;border:1px solid var(--line);border-radius:12px;background:var(--felt);font:800 21px/1 var(--ui)}
+.skey:active{background:var(--line)}
+.skey .n{position:absolute;top:4px;right:6px;font:600 10px/1 var(--ui);color:var(--dim);font-variant-numeric:tabular-nums}
+.skey.out{opacity:.4}
+.skey.over .n{color:var(--warn)}
+.skey.red{color:var(--warn)}
+.sact{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+.sact button{height:44px;border:1px solid var(--line);border-radius:12px;background:transparent;font-size:14px;font-weight:600}
+.sact button:active{background:var(--line)}
+.sfoot{margin:8px 0 0;font-size:12px;color:var(--dim);text-align:center}
+@keyframes up{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+
+/* rule book */
+.rules{position:fixed;inset:0;z-index:25;background:var(--felt);display:flex;justify-content:center}
+.rules-c{width:100%;max-width:440px;height:100%;display:flex;flex-direction:column;gap:12px;padding-top:calc(12px + env(safe-area-inset-top,0px));padding-bottom:env(safe-area-inset-bottom,0px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.rules-h{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.rules-h h2{margin:0;font:800 26px/1 var(--ui);letter-spacing:-.01em}
+.rules-h button{height:36px;padding:0 15px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--ink);font-weight:600;font-size:14px}
+.rtabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:none}
+.rtabs::-webkit-scrollbar{display:none}
+.rtab{flex:none;height:36px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--dim);font-weight:600;font-size:14px;white-space:nowrap}
+.rtab[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:var(--felt)}
+.rbody{flex:1;min-height:0;overflow-y:auto;padding-bottom:24px;user-select:text;-webkit-user-select:text}
+.rbody h3{margin:0 0 6px;font:800 19px/1.2 var(--ui)}
+.rbody h3:not(:first-child){margin-top:20px}
+.rbody h4{margin:0 0 3px;font:700 15px/1.3 var(--ui)}
+.rbody p{margin:0 0 10px;font-size:15px;line-height:1.5;color:var(--ink);opacity:.9;max-width:52ch}
+.rbody a{color:var(--brass)}
+.rl{margin:0 0 10px;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.rl li{position:relative;padding-left:18px;font-size:15px;line-height:1.5;opacity:.92}
+.rl li::before{content:"";position:absolute;left:3px;top:.62em;width:6px;height:6px;border-radius:50%;background:var(--brass)}
+ol.steps{margin:0 0 10px;padding:0;list-style:none;counter-reset:s;display:flex;flex-direction:column;gap:12px}
+ol.steps li{counter-increment:s;position:relative;padding-left:40px;font-size:15px;line-height:1.5}
+ol.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:28px;height:28px;border-radius:50%;background:var(--panel);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:var(--brass)}
+ol.steps li b{display:block;font-size:16px}
+.pw{display:grid;grid-template-columns:76px minmax(0,1fr);gap:14px;padding:14px 0;border-top:1px solid var(--line);align-items:start}
+.pw:first-of-type{border-top:0;padding-top:4px}
+.pw .rk{display:flex;gap:6px}
+.pw p{margin:0;font-size:14px}
+.note{margin-top:16px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.note b{display:block;margin-bottom:4px;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--brass)}
+.note p{margin:0;font-size:14px}
+.vals{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:6px 0 12px}
+.vi{display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 0;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.vi b{font:800 17px/1 var(--ui)}
+.vi.red b{color:var(--warn)}
+.vi{cursor:pointer}
+.vi.on{border-color:var(--brass);box-shadow:0 0 0 1px var(--brass)}
+.vhint{margin:0 0 12px;font-size:13px;color:var(--dim)}
+.ved{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 14px;padding:10px 12px;border:1px solid var(--brass);border-radius:12px;background:var(--panel)}
+.ved span{font-size:15px}
+.ved span b{font-weight:800;font-size:17px}
+.vstep{display:flex;align-items:center;gap:4px}
+.vstep button{width:40px;height:40px;border:1px solid var(--line);border-radius:10px;background:var(--felt);font-size:20px;font-weight:700;line-height:1}
+.vstep output{min-width:42px;text-align:center;font:800 22px/1 var(--ui);font-variant-numeric:tabular-nums}
+.vreset{height:40px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--dim);font-weight:600;font-size:14px}
+.vreset:disabled{opacity:.35}
+.vi i{font-style:normal;font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+.sw{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 0;border-top:1px solid var(--line)}
+.sw p{margin:0;font-size:14px;color:var(--dim)}
+.sw h4{margin:0 0 2px}
+.tg{flex:none;position:relative;width:50px;height:30px;border-radius:999px;border:1px solid var(--line);background:var(--panel);padding:0}
+.tg::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:var(--dim)}
+.tg[aria-checked="true"]{background:var(--brass);border-color:var(--brass)}
+.tg[aria-checked="true"]::after{left:23px;background:var(--felt)}
+.lbtn{height:44px;padding:0 18px;border:1px solid var(--line);border-radius:12px;background:var(--panel);font-weight:600;font-size:15px}
+.sw.col{flex-direction:column;align-items:flex-start;gap:10px}
+.opts{display:flex;gap:6px}
+.opt{height:40px;min-width:56px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--dim);font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+.opt[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--felt)}
+
+/* welcome tour */
+.tour{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;background:rgba(5,9,8,.78);padding:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.tour-c{width:100%;max-width:400px;max-height:100%;overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.ill{height:124px;border-radius:14px;background:var(--felt);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:14px;color:var(--ink)}
+.ill.col{flex-direction:column;gap:6px}
+.tour h2{margin:0;font:800 25px/1.15 var(--ui);letter-spacing:-.01em;text-wrap:balance}
+.tour p{margin:0;font-size:15px;line-height:1.5;color:var(--ink);opacity:.9;max-width:46ch}
+.tour-f{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.dots{display:flex;gap:6px}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}
+.dots i.on{background:var(--brass)}
+.tbtns{display:flex;gap:8px}
+.btn{height:42px;padding:0 18px;border:1px solid var(--line);border-radius:12px;background:transparent;font-weight:600;font-size:15px}
+.btn.pri{background:var(--brass);border-color:var(--brass);color:var(--felt)}
+.btn.ghost{border-color:transparent;color:var(--dim);padding:0 8px}
+
+/* tour illustrations */
+.mc{width:34px;height:48px;border-radius:7px;border:1px solid var(--back-line);background-color:var(--back);background-image:repeating-linear-gradient(45deg,transparent 0 4px,var(--back-line) 4px 5px);display:inline-flex;align-items:center;justify-content:center;font:800 17px/1 var(--ui);color:var(--face-ink)}
+.mc.f{background-image:none;background-color:var(--face);border-color:var(--face)}
+.mc.s{width:30px;height:42px;font-size:15px}
+.mc.sel{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--brass)}
+.mc.add{background:none;border:1.5px dashed var(--dim);color:var(--dim);font-size:22px;font-weight:600}
+.fan .mc{margin:0 -7px;transform:rotate(var(--r))}
+.mg{display:grid;grid-template-columns:repeat(2,34px);gap:6px}
+.mg.three{grid-template-columns:repeat(3,34px)}
+.mk{display:grid;grid-template-columns:repeat(3,28px);gap:5px}
+.mk span{height:28px;border:1px solid var(--line);border-radius:7px;background:var(--panel);display:flex;align-items:center;justify-content:center;font:800 13px/1 var(--ui)}
+.mchips{display:flex;gap:6px}
+.mchips span{padding:6px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--dim);font-size:13px;font-weight:500}
+.mchips span.on{background:var(--ink);border-color:var(--ink);color:var(--felt);font-weight:700}
+.ill .big{font:800 34px/1 var(--ui)}
+.ill .sm{font-size:13px;color:var(--dim)}
+.ill .brass{color:var(--brass)}
+
+@media (max-height:600px){
+  .act{height:44px}
+  .chip,.step{height:32px}
+}
+@media (prefers-reduced-motion:reduce){.pager{scroll-behavior:auto}.sheet-p{animation:none}}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header class="top">
+    <div class="brand"><h1>Kaboo</h1><small id="stats"></small></div>
+    <div class="tools">
+      <button type="button" class="tbtn" id="rulesbtn">Rules</button>
+      <button type="button" class="tbtn" id="newround">New round</button>
+    </div>
+  </header>
+  <nav class="chips" id="chips" aria-label="Players"></nav>
+  <div class="strip">
+    <input id="pname" type="text" maxlength="10" autocomplete="off" aria-label="Player name">
+    <div class="sum" id="sum"></div>
+  </div>
+  <div class="pager" id="pager" aria-label="Player boards, swipe sideways"></div>
+  <div class="hint" id="hint" aria-live="polite"></div>
+  <div class="acts">
+    <button type="button" class="act" id="swap">Swap</button>
+    <button type="button" class="act" id="pile">Pile</button>
+    <button type="button" class="act" id="addcard">+ Card</button>
+    <button type="button" class="act" id="undo">Undo</button>
+  </div>
+</div>
+
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-p" role="dialog" aria-modal="true" aria-labelledby="sheet-t">
+    <div class="sheet-h"><h2 id="sheet-t"></h2><button type="button" id="sheet-x">Close</button></div>
+    <div class="skeys" id="skeys"></div>
+    <div id="sextra">
+      <div class="sact">
+        <button type="button" id="s-forget">Forget</button>
+        <button type="button" id="s-disc">&minus; Discarded</button>
+        <button type="button" id="s-gave">&minus; Given away</button>
+      </div>
+      <p class="sfoot">&minus; takes the card out of this hand. Discarded also counts it on the pile.</p>
+    </div>
+  </div>
+</div>
+
+<div class="rules" id="rules" hidden>
+  <div class="rules-c" role="dialog" aria-modal="true" aria-labelledby="rules-t">
+    <div class="rules-h"><h2 id="rules-t">Rule book</h2><button type="button" id="rules-x">Close</button></div>
+    <div class="rtabs" id="rtabs" role="tablist" aria-label="Rule sections"></div>
+    <div class="rbody" id="rbody" role="tabpanel" tabindex="0"></div>
+  </div>
+</div>
+
+<div class="tour" id="tour" hidden>
+  <div class="tour-c" role="dialog" aria-modal="true" aria-labelledby="tour-t">
+    <div class="ill" id="tour-i"></div>
+    <h2 id="tour-t"></h2>
+    <p id="tour-p"></p>
+    <div class="tour-f">
+      <button type="button" class="btn ghost" id="tour-skip">Skip</button>
+      <div class="dots" id="tour-d" aria-hidden="true"></div>
+      <div class="tbtns">
+        <button type="button" class="btn" id="tour-back">Back</button>
+        <button type="button" class="btn pri" id="tour-next">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var BASE=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+  // Card values. Change here if your table plays different values.
+  var VAL={A:1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,J:11,Q:12,K:15,Kr:-1,Jk:0};
+  var FULLNAME={Kr:'Red king',Jk:'Joker'};
+  var STORE='kaboo-memory-v3',TOURKEY='kaboo-tour-v2';
+  var MAXP=6,MINP=2,MAXC=9;
+
+  function has(k){return Object.prototype.hasOwnProperty.call(VAL,k);}
+  function lab(k){if(k==='Kr')return 'K♥♦';if(k==='K'&&S.rules.rk)return 'K♠♣';return k;}
+  function val(k){var o=S.values&&S.values[k];return typeof o==='number'?o:VAL[k];}
+  function fmtv(v){return v<0?'−'+(-v):String(v);}
+  function nameOf(k){if(k==='K'&&S.rules.rk)return 'Black king';return FULLNAME[k]||k;}
+  function mkCards(){return [null,null,null,null];}
+  function fresh(){
+    return {players:['You','P2','P3','P4'].map(function(n){return {name:n,cards:mkCards()};}),disc:{},cur:0,rules:{jokers:true,rk:true},values:{}};
+  }
+  function load(){
+    try{
+      var s=JSON.parse(localStorage.getItem(STORE));
+      if(!s||!Array.isArray(s.players)||s.players.length<MINP||s.players.length>MAXP)return null;
+      s.players.forEach(function(p){
+        p.name=String(p.name||'').slice(0,10);
+        var src=Array.isArray(p.cards)?p.cards.slice(0,MAXC):mkCards();
+        p.cards=src.map(function(x){if(x==='Kd')x='Kr';return typeof x==='string'&&has(x)?x:null;});
+      });
+      var d={};
+      if(s.disc&&typeof s.disc==='object'){Object.keys(s.disc).forEach(function(k){var kk=k==='Kd'?'Kr':k;if(has(kk)&&s.disc[k]>0)d[kk]=(d[kk]||0)+(s.disc[k]|0);});}
+      s.disc=d;
+      s.cur=Math.max(0,Math.min(s.players.length-1,s.cur|0));
+      var rv=s.rules&&s.rules.rkv,vals={};
+      if(s.values&&typeof s.values==='object'){Object.keys(s.values).forEach(function(k){var n=s.values[k];if(has(k)&&typeof n==='number'&&isFinite(n))vals[k]=Math.max(-20,Math.min(60,Math.round(n)));});}
+      if(rv===0)vals.Kr=0;
+      var rkOn=!(s.rules&&(s.rules.rk===false||rv===13));
+      s.values=vals;
+      s.rules={jokers:!(s.rules&&s.rules.jokers===false),rk:rkOn};
+      return s;
+    }catch(e){return null;}
+  }
+  function save(){try{localStorage.setItem(STORE,JSON.stringify(S));}catch(e){}}
+
+  var S=load()||fresh();
+  var hist=[],cards=[],chipBtns=[],stepMinus,stepPlus;
+  var swapOn=false,swapFirst=null;
+  var sheetKind=null,target=null;
+  var flashText='',flashT=0,armT=0,armed=false;
+
+  var $=function(id){return document.getElementById(id);};
+  var pager=$('pager'),chipsEl=$('chips'),nameIn=$('pname'),sumEl=$('sum'),statsEl=$('stats'),hintEl=$('hint');
+  var undoBtn=$('undo'),swapBtn=$('swap'),pileBtn=$('pile'),addBtn=$('addcard'),newBtn=$('newround');
+  var sheet=$('sheet'),skeys=$('skeys'),sextra=$('sextra');
+
+  function ranks(){
+    var out=[];
+    var split=S.rules.rk;
+    BASE.forEach(function(k){out.push({k:k,v:val(k),n:(k==='K'&&split)?2:4});});
+    if(split)out.push({k:'Kr',v:val('Kr'),n:2});
+    if(S.rules.jokers)out.push({k:'Jk',v:0,n:2});
+    return out;
+  }
+  function deckSize(){return ranks().reduce(function(a,r){return a+r.n;},0);}
+
+  function snap(){hist.push(JSON.stringify({players:S.players,disc:S.disc,rules:S.rules}));if(hist.length>60)hist.shift();}
+  function restore(str){
+    var o=JSON.parse(str);S.players=o.players;S.disc=o.disc;S.rules=o.rules;
+    if(S.cur>=S.players.length)S.cur=S.players.length-1;
+    swapOn=false;swapFirst=null;
+    buildSheetKeys();buildBoards();update();save();
+    if(!$('rules').hidden)renderRules(rtab);
+  }
+  function flash(t){
+    flashText=t;clearTimeout(flashT);
+    flashT=setTimeout(function(){flashText='';update();},2400);
+  }
+
+  /* ---------- boards ---------- */
+  function layout(n){var cols=n<=1?1:(n<=4?2:3);return {cols:cols,rows:Math.max(1,Math.ceil(n/cols))};}
+  function buildBoards(){
+    pager.innerHTML='';cards=[];
+    S.players.forEach(function(p,pi){
+      var panel=document.createElement('div');panel.className='panel';
+      var n=p.cards.length;cards[pi]=[];
+      if(n===0){
+        panel.innerHTML='<div class="empty"><b>No cards left</b><span>Nice work. Tap + Card if a penalty comes your way.</span></div>';
+      }else{
+        var L=layout(n),grid=document.createElement('div');grid.className='grid';
+        grid.style.gridTemplateColumns='repeat('+L.cols+',minmax(0,1fr))';
+        grid.style.gridTemplateRows='repeat('+L.rows+',minmax(0,1fr))';
+        grid.style.aspectRatio=(L.cols*5)+' / '+(L.rows*7);
+        grid.style.width='min(100cqw, calc(100cqh * '+((L.cols*5)/(L.rows*7)).toFixed(4)+'))';
+        for(var i=0;i<n;i++){
+          var b=document.createElement('button');b.type='button';b.className='card';
+          b.addEventListener('click',onCard.bind(null,pi,i));
+          grid.appendChild(b);cards[pi][i]=b;
+        }
+        panel.appendChild(grid);
+      }
+      pager.appendChild(panel);
+    });
+    chipsEl.innerHTML='';chipBtns=[];
+    S.players.forEach(function(p,pi){
+      var b=document.createElement('button');b.type='button';b.className='chip';
+      b.addEventListener('click',function(){goTo(pi,true);});
+      chipsEl.appendChild(b);chipBtns.push(b);
+    });
+    stepMinus=document.createElement('button');stepMinus.type='button';stepMinus.className='step';
+    stepMinus.textContent='−';stepMinus.setAttribute('aria-label','Remove last player');
+    stepMinus.addEventListener('click',removePlayer);
+    stepPlus=document.createElement('button');stepPlus.type='button';stepPlus.className='step';
+    stepPlus.textContent='+';stepPlus.setAttribute('aria-label','Add player');
+    stepPlus.addEventListener('click',addPlayer);
+    chipsEl.appendChild(stepMinus);chipsEl.appendChild(stepPlus);
+    requestAnimationFrame(function(){pager.style.scrollBehavior='auto';pager.scrollLeft=S.cur*pager.clientWidth;pager.style.scrollBehavior='';});
+  }
+  function goTo(i,smooth){
+    i=Math.max(0,Math.min(S.players.length-1,i));
+    S.cur=i;save();update();
+    var w=pager.clientWidth;
+    if(smooth&&pager.scrollTo)pager.scrollTo({left:i*w,behavior:'smooth'});else pager.scrollLeft=i*w;
+  }
+  function addPlayer(){
+    if(S.players.length>=MAXP)return;
+    snap();S.players.push({name:'P'+(S.players.length+1),cards:mkCards()});
+    S.cur=S.players.length-1;buildBoards();update();save();
+  }
+  function removePlayer(){
+    if(S.players.length<=MINP)return;
+    snap();S.players.pop();
+    if(S.cur>=S.players.length)S.cur=S.players.length-1;
+    swapOn=false;swapFirst=null;
+    buildBoards();update();save();
+  }
+  function addCard(){
+    var p=S.players[S.cur];
+    if(p.cards.length>=MAXC){flash('Nine cards is the most a hand can hold.');update();return;}
+    snap();p.cards.push(null);swapOn=false;swapFirst=null;
+    save();buildBoards();flash('Penalty card added. Tap it once you know what it is.');update();
+  }
+
+  /* ---------- actions ---------- */
+  function onCard(p,i){
+    if(swapOn){
+      if(!swapFirst){swapFirst={p:p,i:i};}
+      else if(swapFirst.p===p&&swapFirst.i===i){swapFirst=null;}
+      else{
+        snap();
+        var a=S.players[swapFirst.p].cards,b=S.players[p].cards;
+        var t=a[swapFirst.i];a[swapFirst.i]=b[i];b[i]=t;
+        swapOn=false;swapFirst=null;save();flash('Swapped.');
+      }
+      update();return;
+    }
+    openSheet('card',{p:p,i:i});
+  }
+  function toggleSwap(){
+    swapOn=!swapOn;swapFirst=null;flashText='';update();
+  }
+
+  /* ---------- rank sheet ---------- */
+  function buildSheetKeys(){
+    skeys.innerHTML='';
+    ranks().forEach(function(r){
+      var b=document.createElement('button');b.type='button';b.className='skey'+(r.k==='Kr'?' red':'');b.dataset.k=r.k;
+      b.setAttribute('aria-label',nameOf(r.k));
+      b.innerHTML=lab(r.k)+'<span class="n"></span>';
+      b.addEventListener('click',function(){applyRank(r.k);});
+      skeys.appendChild(b);
+    });
+  }
+  function openSheet(kind,t){
+    sheetKind=kind;target=t||null;
+    $('sheet-t').textContent=kind==='card'?(S.players[t.p].name||'Player')+'’s card: what is it?':'What went on the discard pile?';
+    sextra.hidden=(kind!=='card');
+    sheet.hidden=false;update();
+  }
+  function closeSheet(){sheet.hidden=true;sheetKind=null;target=null;update();}
+  function applyRank(k){
+    if(sheetKind==='card'){
+      var p=S.players[target.p],old=p.cards[target.i];
+      if(old!==k){
+        snap();
+        if(old)S.disc[old]=(S.disc[old]||0)+1; // the replaced card lands face up on the pile
+        p.cards[target.i]=k;
+      }
+    }else if(sheetKind==='pile'){
+      snap();S.disc[k]=(S.disc[k]||0)+1;
+    }
+    save();closeSheet();
+  }
+  function forgetCard(){
+    if(sheetKind!=='card')return;
+    var p=S.players[target.p];
+    if(p.cards[target.i]){snap();p.cards[target.i]=null;save();}
+    closeSheet();
+  }
+  function removeCard(toPile){
+    if(sheetKind!=='card')return;
+    var p=S.players[target.p],old=p.cards[target.i];
+    snap();p.cards.splice(target.i,1);
+    if(old&&toPile)S.disc[old]=(S.disc[old]||0)+1;
+    save();buildBoards();
+    var msg='Card removed.';
+    if(old&&toPile)msg='Removed. '+lab(old)+' counted on the pile.';
+    else if(old)msg='Removed. Record '+lab(old)+' on the hand it went to.';
+    sheet.hidden=true;sheetKind=null;target=null;
+    swapOn=false;swapFirst=null;
+    flash(msg);update();
+  }
+
+  /* ---------- numbers ---------- */
+  function seenCounts(){
+    var c={};
+    Object.keys(VAL).forEach(function(k){c[k]=S.disc[k]||0;});
+    S.players.forEach(function(p){p.cards.forEach(function(x){if(x)c[x]++;});});
+    return c;
+  }
+
+  function update(){
+    var seen=seenCounts(),rk=ranks(),left=0,total=0,map={};
+    rk.forEach(function(r){map[r.k]=r;var rem=Math.max(0,r.n-seen[r.k]);left+=rem;total+=rem*r.v;});
+    var avg=left?total/left:0;
+    statsEl.textContent=left+' of '+deckSize()+' unseen · avg '+avg.toFixed(1);
+
+    S.players.forEach(function(p,pi){
+      for(var i=0;i<p.cards.length;i++){
+        var b=cards[pi][i],x=p.cards[i];
+        var isSel=(swapFirst&&swapFirst.p===pi&&swapFirst.i===i)||(sheetKind==='card'&&target&&target.p===pi&&target.i===i);
+        b.className='card'+(x?' known':'')+(isSel?' sel':'');
+        if(x){
+          var v=val(x);
+          b.innerHTML='<span class="r'+(x==='Kr'?' red':'')+'">'+lab(x)+'</span>'+(String(v)!==lab(x)?'<span class="v">'+fmtv(v)+'</span>':'');
+          b.setAttribute('aria-label',p.name+' card '+(i+1)+': '+nameOf(x));
+        }else{
+          b.innerHTML='<span class="q">?</span>';
+          b.setAttribute('aria-label',p.name+' card '+(i+1)+': unknown, tap to set');
+        }
+      }
+      chipBtns[pi].textContent=p.name||('P'+(pi+1));
+      chipBtns[pi].className='chip'+(pi===S.cur?' on':'');
+      chipBtns[pi].setAttribute('aria-current',pi===S.cur?'true':'false');
+    });
+
+    var cp=S.players[S.cur],known=0,unk=0;
+    cp.cards.forEach(function(x){if(x)known+=val(x);else unk++;});
+    if(document.activeElement!==nameIn)nameIn.value=cp.name;
+    if(cp.cards.length===0)sumEl.innerHTML='<b>0</b><span>no cards</span>';
+    else if(unk===0)sumEl.innerHTML='<b>'+known+'</b><span>all known</span>';
+    else sumEl.innerHTML='<b>≈'+Math.round(known+unk*avg)+'</b><span>'+known+' known · '+unk+' unknown</span>';
+
+    skeys.querySelectorAll('.skey').forEach(function(b){
+      var r=map[b.dataset.k];if(!r)return;
+      var rem=r.n-seen[r.k];
+      b.querySelector('.n').textContent=Math.max(0,rem);
+      b.className='skey'+(r.k==='Kr'?' red':'')+(rem<=0?' out':'')+(rem<0?' over':'');
+    });
+
+    stepMinus.disabled=S.players.length<=MINP;
+    stepPlus.disabled=S.players.length>=MAXP;
+    undoBtn.disabled=hist.length===0;
+    pileBtn.disabled=swapOn;
+    addBtn.disabled=swapOn;
+    swapBtn.textContent=swapOn?'Cancel':'Swap';
+    swapBtn.className='act'+(swapOn?' on':'');
+
+    var h='',live=false;
+    if(flashText){h=flashText;live=true;}
+    else if(swapOn){live=true;h=swapFirst?'Now tap the second card. Swipe to reach another player.':'Tap the first card to swap.';}
+    else if(cp.cards.length===0)h='No cards left. Tap + Card if a penalty comes.';
+    else h='Tap a card to record it.';
+    hintEl.textContent=h;hintEl.className='hint'+(live?' live':'');
+  }
+
+  /* ---------- table rules ---------- */
+  function setRule(key,on){
+    if(S.rules[key]===on)return;
+    snap();
+    if(key==='rk'&&!on){
+      S.players.forEach(function(p){p.cards=p.cards.map(function(x){return x==='Kr'?'K':x;});});
+      if(S.disc.Kr){S.disc.K=(S.disc.K||0)+S.disc.Kr;delete S.disc.Kr;}
+    }
+    if(key==='jokers'&&!on){
+      S.players.forEach(function(p){p.cards=p.cards.map(function(x){return x==='Jk'?null:x;});});
+      delete S.disc.Jk;
+    }
+    S.rules[key]=on;
+    save();buildSheetKeys();update();
+  }
+
+  var editK=null; // rank whose value is being edited in the scoring table
+  function setValue(k,v){
+    v=Math.max(-20,Math.min(60,v));
+    if(!S.values)S.values={};
+    if(v===VAL[k])delete S.values[k];else S.values[k]=v;
+    save();update();
+  }
+
+  /* ---------- rule book ---------- */
+  var TABS=[
+    {id:'basics',t:'Basics'},{id:'turn',t:'Your turn'},{id:'powers',t:'Powers'},
+    {id:'match',t:'Matching'},{id:'end',t:'Scoring'},{id:'table',t:'Table rules'}
+  ];
+  var rtab='basics';
+  function chipsFor(list){return list.map(function(r){return '<span class="mc f s">'+r+'</span>';}).join('');}
+  function power(list,title,text){
+    return '<div class="pw"><div class="rk">'+chipsFor(list)+'</div><div><h4>'+title+'</h4><p>'+text+'</p></div></div>';
+  }
+  function note(text){return '<div class="note"><b>In the app</b><p>'+text+'</p></div>';}
+  function valEditor(){
+    var cur=null;
+    ranks().forEach(function(r){if(r.k===editK)cur=r;});
+    if(!cur){editK=null;return '<p class="vhint">Tap a card to change what it is worth at your table.</p>';}
+    return '<div class="ved"><span><b>'+lab(cur.k)+'</b> is worth</span>'
+      +'<div class="vstep"><button type="button" data-vd="-1" aria-label="Lower the value">−</button>'
+      +'<output>'+fmtv(cur.v)+'</output>'
+      +'<button type="button" data-vd="1" aria-label="Raise the value">+</button></div>'
+      +'<button type="button" class="vreset" data-vr="1"'+(cur.v===VAL[cur.k]?' disabled':'')+'>Reset</button></div>';
+  }
+  var CONTENT={
+    basics:function(){return ''
+      +'<h3>The goal</h3>'
+      +'<p>Finish the round with the lowest total across the cards in front of you. You cannot look at your own cards, so memory is the whole game.</p>'
+      +'<h3>Setting up</h3>'
+      +'<ul class="rl">'
+      +'<li>Use a standard 52-card deck'+(S.rules.jokers?', plus 2 jokers':'')+'.</li>'
+      +'<li>Deal 4 cards face down to each player, laid out as a 2 by 2 square. Nobody looks yet.</li>'
+      +'<li>Put the rest face down as the draw pile and flip one card to start the discard pile.</li>'
+      +'<li>Everyone secretly peeks at 2 of their own cards, once, then leaves them where they are. Remember them.</li>'
+      +'<li>Play goes clockwise.</li>'
+      +'</ul>'
+      +note('Do your opening peek, then tap those two cards on your board and record what they were.');},
+    turn:function(){return ''
+      +'<h3>On your turn, do one of these</h3>'
+      +'<ol class="steps">'
+      +'<li><b>Draw from the deck</b>Then either swap the drawn card with one of your own cards, or discard it. A card you swap out goes face up on the discard pile, so everyone sees it. If you discard a 7 to Queen that you just drew, you may use its power.</li>'
+      +'<li><b>Take the top discard</b>Swap it with one of your own cards. No power is used.</li>'
+      +'<li><b>Call Kaboo</b>Say so when you think your total is the lowest. See the Scoring tab.</li>'
+      +'</ol>'
+      +note('Swapped a drawn card in? Tap that slot and set its new rank. The card it replaced is counted on the pile for you.');},
+    powers:function(){return ''
+      +'<h3>Card powers</h3>'
+      +'<p>A power only works on a card you drew from the deck and discard straight away. Using it ends your turn.</p>'
+      +power(['7','8'],'Peek','Look at one of your own cards, then put it back.')
+      +power(['9','10'],'Spy','Look at one card belonging to another player, then put it back.')
+      +power(['J','Q'],'Swap','Swap any two cards on the table, yours or other players’, without looking at them.')
+      +note('After a peek or spy, tap that card and set its rank. For a swap, use the Swap button, then tap both cards. You can swipe between players in between.');},
+    match:function(){return ''
+      +'<h3>Matching</h3>'
+      +'<p>If the card you drew has the same rank as a card on the table, you may try to get rid of that card instead of swapping.</p>'
+      +'<ul class="rl">'
+      +'<li><b>Right:</b> the matched card is discarded and that hand shrinks by one.</li>'
+      +'<li><b>It was another player’s card:</b> you hand them one of your own cards to take its place, without looking at it.</li>'
+      +'<li><b>Wrong:</b> you keep everything and take a penalty card, face down, without looking.</li>'
+      +'</ul>'
+      +'<p>Some tables let anyone jump in with a match right after any discard. Agree on that before the first deal.</p>'
+      +note('Matched your own card: tap it, then choose Discarded. Matched theirs: tap their card and set the rank, then take yours out with Given away. Penalty card: tap + Card. Losing cards is good news, since fewer cards means a lower total.');},
+    end:function(){
+      var rk=ranks().map(function(r){
+        return '<button type="button" class="vi'+(r.k==='Kr'?' red':'')+(editK===r.k?' on':'')+'" data-v="'+r.k+'" aria-pressed="'+(editK===r.k)+'" aria-label="'+nameOf(r.k)+', '+fmtv(r.v)+' points"><b>'+lab(r.k)+'</b><i>'+fmtv(r.v)+'</i></button>';
+      }).join('');
+      return ''
+      +'<h3>Calling Kaboo</h3>'
+      +'<p>Instead of a normal turn, call Kaboo. Every other player then gets exactly one more turn, and the round is over.</p>'
+      +'<p>A round also ends if someone gets rid of their last card, or the draw pile runs out. Many tables shuffle the discard pile into a new draw pile and carry on. Agree on this beforehand.</p>'
+      +'<h3>Scoring</h3>'
+      +'<p>Everyone turns their cards face up and adds up the values. The lowest total wins the round, and an empty hand counts as 0. Tap any card below to change its value to match your table.</p>'
+      +'<div class="vals">'+rk+'</div>'+valEditor()
+      +'<p>For a longer game, keep running totals over several rounds and play until someone passes 100. Some tables add a penalty when the caller does not finish lowest. Editions differ on these details, so settle them first.</p>';},
+    table:function(){return ''
+      +'<h3>Table rules</h3>'
+      +'<p>Tables play slightly different versions. These switches change the deck the app counts.</p>'
+      +'<div class="sw"><div><h4>Jokers in the deck</h4><p>2 jokers, each worth 0.</p></div>'
+      +'<button type="button" class="tg" role="switch" data-tg="jokers" aria-checked="'+S.rules.jokers+'" aria-label="Jokers in the deck"></button></div>'
+      +'<div class="sw"><div><h4>Red kings count separately</h4><p>Hearts and diamonds get their own key and value. Turn off to treat every king the same.</p></div>'
+      +'<button type="button" class="tg" role="switch" data-tg="rk" aria-checked="'+S.rules.rk+'" aria-label="Red kings count separately"></button></div>'
+      +'<h3>Need the tour again?</h3>'
+      +'<p><button type="button" class="lbtn" data-act="tour">Replay the welcome tour</button></p>'
+      +'<h3>Where these rules come from</h3>'
+      +'<p>Kaboo plays like the card game Cabo. This summary follows the common four-card version described on <a href="https://en.wikipedia.org/wiki/Cabo_(game)" target="_blank" rel="noopener">Wikipedia</a> and in <a href="https://treyhunner.com/2015/06/cabo-card-game/" target="_blank" rel="noopener">Trey Hunner’s write-up</a>. Tables differ on card values, so tap any value in the Scoring tab to match yours. Your table’s house rules win.</p>';}
+  };
+  function renderRules(id,keep){
+    rtab=id;
+    var tabs=$('rtabs');tabs.innerHTML='';
+    TABS.forEach(function(t){
+      var b=document.createElement('button');b.type='button';b.className='rtab';b.textContent=t.t;
+      b.setAttribute('role','tab');b.setAttribute('aria-selected',t.id===id?'true':'false');
+      b.addEventListener('click',function(){renderRules(t.id);});
+      tabs.appendChild(b);
+      if(t.id===id){var sel=b;requestAnimationFrame(function(){sel.scrollIntoView({block:'nearest',inline:'nearest'});});}
+    });
+    var body=$('rbody');var st=keep?body.scrollTop:0;body.innerHTML=CONTENT[id]();body.scrollTop=st;
+  }
+  function rulesOpen(){$('rules').hidden=false;renderRules(rtab);$('rules-x').focus();}
+  function rulesClose(){$('rules').hidden=true;}
+  $('rbody').addEventListener('click',function(e){
+    var tg=e.target.closest&&e.target.closest('[data-tg]');
+    if(tg){setRule(tg.dataset.tg,tg.getAttribute('aria-checked')!=='true');renderRules(rtab,true);return;}
+    var vb=e.target.closest&&e.target.closest('[data-v]');
+    if(vb){editK=(editK===vb.dataset.v)?null:vb.dataset.v;renderRules(rtab,true);return;}
+    var vd=e.target.closest&&e.target.closest('[data-vd]');
+    if(vd&&editK){setValue(editK,val(editK)+parseInt(vd.dataset.vd,10));renderRules(rtab,true);return;}
+    var vr=e.target.closest&&e.target.closest('[data-vr]');
+    if(vr&&editK){setValue(editK,VAL[editK]);renderRules(rtab,true);return;}
+    var act=e.target.closest&&e.target.closest('[data-act]');
+    if(act&&act.dataset.act==='tour'){rulesClose();tourOpen();}
+  });
+  $('rulesbtn').addEventListener('click',rulesOpen);
+  $('rules-x').addEventListener('click',rulesClose);
+
+  /* ---------- welcome tour ---------- */
+  var arrows='<svg width="40" height="26" viewBox="0 0 40 26" aria-hidden="true"><path d="M5 9h28M26 3l7 6-7 6M35 18H7M14 12l-7 6 7 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var STEPS=[
+    {t:'Remember every card',
+     p:'Kaboo Memory keeps track of the cards you have seen, so you know what you are really holding. The tour takes under a minute.',
+     i:'<div class="fan"><span class="mc f" style="--r:-12deg">A</span><span class="mc f" style="--r:0deg">7</span><span class="mc f" style="--r:12deg">K</span></div>'},
+    {t:'Tap a card, pick its rank',
+     p:'Peeked at one of your cards? Tap it and choose what it was. If you swap in a new card, record it and the old one goes onto the discard count for you.',
+     i:'<div class="mg"><span class="mc"></span><span class="mc f sel">7</span><span class="mc"></span><span class="mc"></span></div><div class="mk"><span>A</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span></div>'},
+    {t:'Swipe between players',
+     p:'Every player has their own board. Swipe sideways or tap a name. Use + and − to match how many people are playing.',
+     i:'<div class="mchips"><span>You</span><span class="on">P2</span><span>P3</span></div><span class="sm brass">‹ swipe ›</span>',col:true},
+    {t:'Swap cards',
+     p:'When two cards trade places, tap Swap, then tap both cards. You can swipe to another player between the two taps.',
+     i:'<span class="mc f">K</span>'+arrows+'<span class="mc f">3</span>'},
+    {t:'Penalty and lost cards',
+     p:'Got a penalty card? Tap + Card. Lost one? Tap it and choose Discarded or Given away. Boards grow and shrink to match.',
+     i:'<div class="mg three"><span class="mc"></span><span class="mc f">9</span><span class="mc"></span><span class="mc add">+</span></div>'},
+    {t:'Watch the pile and the odds',
+     p:'Tap Pile when a card is discarded face up. The small number on each rank is how many are still unseen, and ≈ shows a hand’s expected total. Open Rules any time for the full rule book.',
+     i:'<span class="big">≈ 24</span><span class="sm">31 of 54 unseen</span>',col:true}
+  ];
+  var tourI=0,tour=$('tour');
+  function tourRender(){
+    var s=STEPS[tourI];
+    $('tour-i').innerHTML=s.i;$('tour-i').className='ill'+(s.col?' col':'');
+    $('tour-t').textContent=s.t;$('tour-p').textContent=s.p;
+    var d='';for(var k=0;k<STEPS.length;k++)d+='<i'+(k===tourI?' class="on"':'')+'></i>';
+    $('tour-d').innerHTML=d;
+    var last=tourI===STEPS.length-1;
+    $('tour-back').style.visibility=tourI===0?'hidden':'visible';
+    $('tour-skip').hidden=last;
+    $('tour-next').textContent=last?'Start tracking':'Next';
+  }
+  function tourOpen(){tourI=0;tour.hidden=false;tourRender();$('tour-next').focus();}
+  function tourClose(){
+    tour.hidden=true;
+    try{localStorage.setItem(TOURKEY,'1');}catch(e){}
+  }
+  $('tour-next').addEventListener('click',function(){if(tourI>=STEPS.length-1)tourClose();else{tourI++;tourRender();}});
+  $('tour-back').addEventListener('click',function(){if(tourI>0){tourI--;tourRender();}});
+  $('tour-skip').addEventListener('click',tourClose);
+
+  /* ---------- wiring ---------- */
+  swapBtn.addEventListener('click',toggleSwap);
+  pileBtn.addEventListener('click',function(){openSheet('pile',null);});
+  addBtn.addEventListener('click',addCard);
+  undoBtn.addEventListener('click',function(){if(hist.length)restore(hist.pop());});
+  $('sheet-x').addEventListener('click',closeSheet);
+  sheet.addEventListener('click',function(e){if(e.target===sheet)closeSheet();});
+  $('s-forget').addEventListener('click',forgetCard);
+  $('s-disc').addEventListener('click',function(){removeCard(true);});
+  $('s-gave').addEventListener('click',function(){removeCard(false);});
+
+  newBtn.addEventListener('click',function(){
+    if(!armed){
+      armed=true;newBtn.textContent='Sure?';newBtn.classList.add('armed');
+      armT=setTimeout(disarm,3000);return;
+    }
+    disarm();snap();
+    S.players.forEach(function(p){p.cards=mkCards();});S.disc={};
+    swapOn=false;swapFirst=null;save();buildBoards();flash('New round. Undo brings it back.');update();
+  });
+  function disarm(){armed=false;clearTimeout(armT);newBtn.textContent='New round';newBtn.classList.remove('armed');}
+
+  nameIn.addEventListener('input',function(){
+    S.players[S.cur].name=nameIn.value.slice(0,10);
+    chipBtns[S.cur].textContent=S.players[S.cur].name||('P'+(S.cur+1));
+    save();
+  });
+  nameIn.addEventListener('keydown',function(e){if(e.key==='Enter')nameIn.blur();});
+
+  var raf=0;
+  pager.addEventListener('scroll',function(){
+    if(raf)return;
+    raf=requestAnimationFrame(function(){
+      raf=0;
+      var w=pager.clientWidth;if(!w)return;
+      var i=Math.max(0,Math.min(S.players.length-1,Math.round(pager.scrollLeft/w)));
+      if(i!==S.cur){S.cur=i;save();update();}
+    });
+  },{passive:true});
+
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){
+      if(!tour.hidden)tourClose();
+      else if(!$('rules').hidden)rulesClose();
+      else if(!sheet.hidden)closeSheet();
+      return;
+    }
+    if(e.target&&e.target.tagName==='INPUT')return;
+    if(!tour.hidden||!sheet.hidden||!$('rules').hidden)return;
+    if(e.key==='ArrowLeft')goTo(S.cur-1,true);
+    else if(e.key==='ArrowRight')goTo(S.cur+1,true);
+  });
+  window.addEventListener('resize',function(){pager.scrollLeft=S.cur*pager.clientWidth;});
+
+  buildSheetKeys();buildBoards();update();
+  var seenTour=false;
+  try{seenTour=!!localStorage.getItem(TOURKEY);}catch(e){}
+  if(!seenTour)tourOpen();
+})();
+</script>
+
+<script>
+if('serviceWorker' in navigator&&location.protocol==='https:'){
+  window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});
+}
+</script>
+</body>
+</html>
