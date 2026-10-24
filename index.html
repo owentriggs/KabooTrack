@@ -52,30 +52,31 @@ button{font:inherit;color:inherit;touch-action:manipulation;cursor:pointer}
 button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 button:disabled{cursor:default}
 
-.app{height:100%;max-width:440px;margin:0 auto;display:grid;grid-template-rows:auto auto auto minmax(0,1fr) auto auto;gap:8px}
+.app{height:100%;max-width:440px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto minmax(0,1fr) auto auto;gap:8px}
 
 /* header */
 .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.brand{min-width:0}
+.brand{min-width:0;overflow:hidden}
 .brand h1{margin:0;font:800 23px/1 var(--ui);letter-spacing:-.01em}
 .brand small{display:block;margin-top:3px;font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap}
 .tools{display:flex;gap:6px}
-.tbtn{height:34px;min-width:34px;padding:0 13px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--ink);font-weight:600;font-size:13px}
+.tbtn{white-space:nowrap;height:34px;min-width:34px;padding:0 13px;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--ink);font-weight:600;font-size:13px}
 .tbtn.armed{background:var(--warn);border-color:var(--warn);color:var(--felt)}
 
 /* players */
 .chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
 .chips::-webkit-scrollbar{display:none}
 .chip{flex:1 1 0;min-width:52px;height:36px;padding:0 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--dim);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.chip.on{background:var(--ink);border-color:var(--ink);color:var(--felt);font-weight:700}
+.chip.on{flex:1 0 auto;background:var(--ink);border-color:var(--ink);color:var(--felt);font-weight:700}
+.chip.on::after{content:"";display:inline-block;width:11px;height:11px;margin-left:5px;vertical-align:-1px;opacity:.55;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M8.5 1.5l2 2L4 10H2V8z' fill='none' stroke='%230e1714' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat}
 .step{flex:0 0 36px;height:36px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--dim);font-size:18px;line-height:1}
 .step:disabled{opacity:.3}
 
 .strip{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.strip input{width:7.5em;min-width:0;background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;color:var(--brass);font:700 20px/1.2 var(--ui);padding:2px 0;user-select:text;-webkit-user-select:text}
-.sum{display:flex;align-items:baseline;gap:8px;min-width:0;white-space:nowrap}
+.strip input{flex:0 1 7.5em;width:7.5em;min-width:4em;background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;color:var(--brass);font:700 20px/1.2 var(--ui);padding:2px 0;user-select:text;-webkit-user-select:text}
+.sum{display:flex;align-items:baseline;gap:8px;min-width:0;white-space:nowrap;overflow:hidden}
 .sum b{font:800 22px/1 var(--ui);font-variant-numeric:tabular-nums}
-.sum span{font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+.sum span{min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
 
 /* boards */
 .pager{display:flex;min-height:0;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -118,6 +119,21 @@ button:disabled{cursor:default}
 .sact button{height:44px;border:1px solid var(--line);border-radius:12px;background:transparent;font-size:14px;font-weight:600}
 .sact button:active{background:var(--line)}
 .sfoot{margin:8px 0 0;font-size:12px;color:var(--dim);text-align:center}
+/* players sheet */
+.plist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.prow{display:flex;align-items:center;gap:6px;height:54px;padding-right:6px;border:1px solid var(--line);border-radius:12px;background:var(--felt);transition:transform .15s ease}
+.prow.cur{border-color:var(--brass)}
+.prow.drag{position:relative;z-index:2;transition:none;border-color:var(--brass);box-shadow:0 10px 24px rgba(0,0,0,.5)}
+.phandle{flex:none;display:flex;align-items:center;gap:8px;height:52px;padding:0 4px 0 12px;border:0;background:transparent;color:var(--dim);touch-action:none;cursor:grab}
+.prow.drag .phandle{cursor:grabbing;color:var(--brass)}
+.phandle b{min-width:12px;font:700 13px/1 var(--ui);font-variant-numeric:tabular-nums}
+.prow input{flex:1;min-width:0;height:40px;padding:0 4px;background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;color:var(--ink);font:600 17px/1.2 var(--ui);user-select:text;-webkit-user-select:text}
+.prow input::placeholder{color:var(--dim);opacity:.6}
+.pdel{flex:none;width:40px;height:40px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--dim);font-size:20px;line-height:1}
+.pdel:disabled{opacity:.3}
+.padd{width:100%;height:46px;margin-top:10px;border:1px dashed var(--line);border-radius:12px;background:transparent;color:var(--ink);font-size:15px;font-weight:600}
+.padd:disabled{opacity:.35}
+.psub{margin:-6px 0 12px;font-size:13px;color:var(--dim)}
 @keyframes up{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
 
 /* rule book */
@@ -217,6 +233,10 @@ ol.steps li b{display:block;font-size:16px}
   .act{height:44px}
   .chip,.step{height:32px}
 }
+@media (max-width:350px){
+  .tbtn{padding:0 9px}
+  .brand h1{font-size:21px}
+}
 @media (prefers-reduced-motion:reduce){.pager{scroll-behavior:auto}.sheet-p{animation:none}}
 </style>
 </head>
@@ -257,6 +277,15 @@ ol.steps li b{display:block;font-size:16px}
       </div>
       <p class="sfoot">&minus; takes the card out of this hand. Discarded also counts it on the pile.</p>
     </div>
+  </div>
+</div>
+
+<div class="sheet" id="psheet" hidden>
+  <div class="sheet-p" role="dialog" aria-modal="true" aria-labelledby="psheet-t">
+    <div class="sheet-h"><h2 id="psheet-t">Players</h2><button type="button" id="psheet-x">Done</button></div>
+    <p class="psub">Tap a name to change it. Drag the handle to match the seating order.</p>
+    <ol class="plist" id="plist"></ol>
+    <button type="button" class="padd" id="p-add">+ Add player</button>
   </div>
 </div>
 
@@ -347,13 +376,15 @@ ol.steps li b{display:block;font-size:16px}
   }
   function deckSize(){return ranks().reduce(function(a,r){return a+r.n;},0);}
 
-  function snap(){hist.push(JSON.stringify({players:S.players,disc:S.disc,rules:S.rules}));if(hist.length>60)hist.shift();}
+  function snap(){hist.push(JSON.stringify({players:S.players,disc:S.disc,rules:S.rules,cur:S.cur}));if(hist.length>60)hist.shift();}
   function restore(str){
     var o=JSON.parse(str);S.players=o.players;S.disc=o.disc;S.rules=o.rules;
+    if(typeof o.cur==='number')S.cur=o.cur;
     if(S.cur>=S.players.length)S.cur=S.players.length-1;
     swapOn=false;swapFirst=null;
     buildSheetKeys();buildBoards();update();save();
     if(!$('rules').hidden)renderRules(rtab);
+    if(!psheet.hidden)renderPlist();
   }
   function flash(t){
     flashText=t;clearTimeout(flashT);
@@ -387,7 +418,7 @@ ol.steps li b{display:block;font-size:16px}
     chipsEl.innerHTML='';chipBtns=[];
     S.players.forEach(function(p,pi){
       var b=document.createElement('button');b.type='button';b.className='chip';
-      b.addEventListener('click',function(){goTo(pi,true);});
+      b.addEventListener('click',function(){if(pi===S.cur)openPlayers(pi);else goTo(pi,true);});
       chipsEl.appendChild(b);chipBtns.push(b);
     });
     stepMinus=document.createElement('button');stepMinus.type='button';stepMinus.className='step';
@@ -417,6 +448,112 @@ ol.steps li b{display:block;font-size:16px}
     swapOn=false;swapFirst=null;
     buildBoards();update();save();
   }
+
+  /* ---------- players sheet ---------- */
+  var psheet=$('psheet'),plist=$('plist'),drag=null;
+  function openPlayers(focusI){
+    psheet.hidden=false;renderPlist();
+    var inp=plist.querySelectorAll('input')[focusI];
+    if(inp){inp.focus();inp.select();}
+  }
+  function closePlayers(){
+    if(plist.contains(document.activeElement))document.activeElement.blur();
+    psheet.hidden=true;drag=null;update();
+  }
+  function renderPlist(){
+    plist.innerHTML='';
+    S.players.forEach(function(p,pi){
+      var li=document.createElement('li');li.className='prow'+(pi===S.cur?' cur':'');
+      var h=document.createElement('button');h.type='button';h.className='phandle';
+      h.innerHTML='<svg width="16" height="14" viewBox="0 0 16 14" aria-hidden="true"><path d="M1 2h14M1 7h14M1 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><b>'+(pi+1)+'</b>';
+      h.setAttribute('aria-label','Seat '+(pi+1)+', '+(p.name||'P'+(pi+1))+'. Drag or use the arrow keys to move.');
+      h.addEventListener('pointerdown',function(e){startDrag(e,pi,li);});
+      h.addEventListener('keydown',function(e){
+        var d=e.key==='ArrowUp'?-1:e.key==='ArrowDown'?1:0;
+        if(!d)return;
+        e.preventDefault();
+        if(movePlayer(pi,pi+d))plist.children[pi+d].querySelector('.phandle').focus();
+      });
+      var inp=document.createElement('input');inp.type='text';inp.maxLength=10;inp.autocomplete='off';
+      inp.value=p.name;inp.placeholder='P'+(pi+1);inp.setAttribute('aria-label','Seat '+(pi+1)+' name');
+      inp.addEventListener('input',function(){
+        S.players[pi].name=inp.value.slice(0,10);save();update();
+      });
+      inp.addEventListener('keydown',function(e){
+        if(e.key!=='Enter')return;
+        var next=plist.querySelectorAll('input')[pi+1];
+        if(next){next.focus();next.select();}else inp.blur();
+      });
+      var del=document.createElement('button');del.type='button';del.className='pdel';del.textContent='×';
+      del.setAttribute('aria-label','Remove '+(p.name||'P'+(pi+1)));
+      del.disabled=S.players.length<=MINP;
+      del.addEventListener('click',function(){deletePlayer(pi);});
+      li.appendChild(h);li.appendChild(inp);li.appendChild(del);
+      plist.appendChild(li);
+    });
+    $('p-add').disabled=S.players.length>=MAXP;
+  }
+  function movePlayer(from,to){
+    to=Math.max(0,Math.min(S.players.length-1,to));
+    if(from===to)return false;
+    snap();
+    var curP=S.players[S.cur],p=S.players.splice(from,1)[0];
+    S.players.splice(to,0,p);
+    S.cur=S.players.indexOf(curP);
+    swapOn=false;swapFirst=null;
+    save();buildBoards();update();renderPlist();
+    return true;
+  }
+  function deletePlayer(i){
+    if(S.players.length<=MINP)return;
+    snap();
+    var curP=S.players[S.cur],gone=S.players.splice(i,1)[0];
+    S.cur=S.players.indexOf(curP);
+    if(S.cur<0)S.cur=Math.min(i,S.players.length-1);
+    swapOn=false;swapFirst=null;
+    save();buildBoards();
+    flash('Removed '+(gone.name||'player')+'. Undo brings them back.');
+    update();renderPlist();
+  }
+  function startDrag(e,i,li){
+    if(e.button>0||drag)return;
+    e.preventDefault();
+    var rows=plist.children;
+    var step=rows.length>1?rows[1].offsetTop-rows[0].offsetTop:li.offsetHeight;
+    drag={i:i,to:i,y:e.clientY,step:step,li:li,id:e.pointerId};
+    li.classList.add('drag');
+    try{e.currentTarget.setPointerCapture(e.pointerId);}catch(err){}
+  }
+  plist.addEventListener('pointermove',function(e){
+    if(!drag||e.pointerId!==drag.id)return;
+    var n=S.players.length,dy=e.clientY-drag.y;
+    dy=Math.max(-drag.i*drag.step,Math.min((n-1-drag.i)*drag.step,dy));
+    drag.li.style.transform='translateY('+dy+'px)';
+    var to=Math.max(0,Math.min(n-1,drag.i+Math.round(dy/drag.step)));
+    drag.to=to;
+    Array.prototype.forEach.call(plist.children,function(r,k){
+      if(k===drag.i)return;
+      var s=0;
+      if(k>drag.i&&k<=to)s=-drag.step;
+      else if(k<drag.i&&k>=to)s=drag.step;
+      r.style.transform=s?'translateY('+s+'px)':'';
+    });
+  });
+  function endDrag(e){
+    if(!drag||e.pointerId!==drag.id)return;
+    var d=drag;drag=null;
+    if(e.type==='pointercancel'||!movePlayer(d.i,d.to))renderPlist();
+  }
+  plist.addEventListener('pointerup',endDrag);
+  plist.addEventListener('pointercancel',endDrag);
+  $('psheet-x').addEventListener('click',closePlayers);
+  psheet.addEventListener('click',function(e){if(e.target===psheet)closePlayers();});
+  $('p-add').addEventListener('click',function(){
+    addPlayer();renderPlist();
+    var inps=plist.querySelectorAll('input'),last=inps[inps.length-1];
+    if(last){last.focus();last.select();}
+  });
+
   function addCard(){
     var p=S.players[S.cur];
     if(p.cards.length>=MAXC){flash('Nine cards is the most a hand can hold.');update();return;}
@@ -525,6 +662,7 @@ ol.steps li b{display:block;font-size:16px}
       chipBtns[pi].textContent=p.name||('P'+(pi+1));
       chipBtns[pi].className='chip'+(pi===S.cur?' on':'');
       chipBtns[pi].setAttribute('aria-current',pi===S.cur?'true':'false');
+      chipBtns[pi].title=pi===S.cur?'Edit players':'';
     });
 
     var cp=S.players[S.cur],known=0,unk=0;
@@ -703,7 +841,7 @@ ol.steps li b{display:block;font-size:16px}
      p:'Peeked at one of your cards? Tap it and choose what it was. If you swap in a new card, record it and the old one goes onto the discard count for you.',
      i:'<div class="mg"><span class="mc"></span><span class="mc f sel">7</span><span class="mc"></span><span class="mc"></span></div><div class="mk"><span>A</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span></div>'},
     {t:'Swipe between players',
-     p:'Every player has their own board. Swipe sideways or tap a name. Use + and − to match how many people are playing.',
+     p:'Every player has their own board. Swipe sideways or tap a name. Tap the highlighted name again to rename players and drag them into seating order.',
      i:'<div class="mchips"><span>You</span><span class="on">P2</span><span>P3</span></div><span class="sm brass">‹ swipe ›</span>',col:true},
     {t:'Swap cards',
      p:'When two cards trade places, tap Swap, then tap both cards. You can swipe to another player between the two taps.',
@@ -780,11 +918,12 @@ ol.steps li b{display:block;font-size:16px}
     if(e.key==='Escape'){
       if(!tour.hidden)tourClose();
       else if(!$('rules').hidden)rulesClose();
+      else if(!psheet.hidden)closePlayers();
       else if(!sheet.hidden)closeSheet();
       return;
     }
     if(e.target&&e.target.tagName==='INPUT')return;
-    if(!tour.hidden||!sheet.hidden||!$('rules').hidden)return;
+    if(!tour.hidden||!sheet.hidden||!psheet.hidden||!$('rules').hidden)return;
     if(e.key==='ArrowLeft')goTo(S.cur-1,true);
     else if(e.key==='ArrowRight')goTo(S.cur+1,true);
   });
