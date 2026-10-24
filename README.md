@@ -6,12 +6,11 @@ It's a single static web page with no build step and no server. Everything is sa
 
 ## Put it online with GitHub Pages
 
-The repository includes a workflow (`.github/workflows/pages.yml`) that publishes the site every time `main` changes.
+The site is live at **https://owentriggs.github.io/KabooTrack/**.
 
-1. Get these files onto the repository's `main` branch.
-2. On GitHub, open the repository's **Settings → Pages**.
-3. Under **Build and deployment**, set **Source** to **GitHub Actions**. This only needs doing once.
-4. Push to `main`, or open the **Actions** tab and run **Deploy to GitHub Pages**. After a minute or so the site is live at `https://<your-username>.github.io/KabooTrack/`.
+Every push to `main` runs a workflow (`.github/workflows/pages.yml`) that copies the site into the `gh-pages` branch, and GitHub Pages serves it from there. The site updates about a minute later. Edit files on `main` only, because `gh-pages` is overwritten on every deploy.
+
+If Pages ever gets switched off, turn it back on in **Settings → Pages**: choose **Deploy from a branch**, then **gh-pages** and **/ (root)**.
 
 On a free GitHub account, Pages only works if the repository is **public**.
 
