@@ -9,7 +9,7 @@ A one-page app for **Kaboo** (a version of the card game Cabo). It opens on a ho
 
 ### Photo scanning
 
-Card Scoring reads the cards in a photo entirely on your phone (`scan.js`). It's free, needs no account or API key, works offline, and photos never leave the device. It finds each white card against the table, straightens it, and reads the rank in its corner by comparing it with ranks drawn in several fonts.
+Tap **Scan cards** to open the in-app camera. It outlines the cards it can see as you aim, so you know the shot is good before you take it. You can also tap **Upload** to pick a photo you already have. Card Scoring reads the cards entirely on your phone (`scan.js`). It's free, needs no account or API key, works offline, and photos never leave the device. It finds each white card against the table, straightens it, and reads the rank in its corner by comparing it with ranks drawn in several fonts.
 
 For best results, lay the cards face up with a small gap between them, on a surface darker than the cards, and take the photo from straight above in good light. Cards it's unsure of show in orange, and any it couldn't read show as **?**: tap either to set it. The photo is shown with each card it found outlined and numbered, so you can see if one was missed.
 
