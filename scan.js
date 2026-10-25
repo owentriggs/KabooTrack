@@ -554,5 +554,8 @@
     return c.toDataURL('image/jpeg',0.8);
   }
 
-  global.KabooScan={read:read,_findCards:findCards,_warp:warp,_readCard:readCard};
+  // Where the cards are in a (small) frame, without reading them: for live outlines in the camera view.
+  function locate(img){return findCards(img).map(function(R){return R.q||corners(R);});}
+
+  global.KabooScan={read:read,locate:locate,_findCards:findCards,_warp:warp,_readCard:readCard};
 })(window);

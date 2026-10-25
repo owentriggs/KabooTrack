@@ -281,6 +281,24 @@ ol.steps li b{display:block;font-size:16px}
 .sprev{display:block;width:100%;margin-top:10px;border-radius:10px;border:1px solid var(--line)}
 #ksheet{z-index:28}
 
+/* camera */
+.cam{position:fixed;inset:0;z-index:40;background:#000;display:flex;flex-direction:column;color:#fff}
+.cam-v{position:relative;flex:1;min-height:0;overflow:hidden}
+.cam-v video,.cam-v canvas{position:absolute;inset:0;width:100%;height:100%}
+.cam-v video{object-fit:cover}
+.cam-top{position:absolute;left:0;right:0;top:0;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));background:linear-gradient(rgba(0,0,0,.6),transparent)}
+.cam-top b{font:700 17px/1.2 var(--ui);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cbtn{flex:none;height:36px;padding:0 14px;border:1px solid rgba(255,255,255,.35);border-radius:999px;background:rgba(0,0,0,.35);color:#fff;font-weight:600;font-size:14px}
+.cbtn[aria-pressed="true"]{background:var(--brass);border-color:var(--brass);color:var(--felt)}
+.cam-bot{flex:none;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;padding:14px max(16px,env(safe-area-inset-right,0px)) calc(16px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:#000}
+.cam-bot .cbtn:first-child{justify-self:start}
+.cam-bot .cbtn:last-child{justify-self:end}
+.shutter{width:72px;height:72px;border-radius:50%;border:4px solid #fff;background:var(--brass);box-shadow:inset 0 0 0 4px #000}
+.shutter:active{transform:scale(.94)}
+.shutter:disabled{opacity:.4}
+.cam-msg{position:absolute;left:16px;right:16px;bottom:14px;z-index:2;text-align:center;font-size:14px;font-weight:600;text-shadow:0 1px 3px #000}
+.cam-msg.ok{color:var(--brass)}
+
 @media (max-height:600px){
   .act{height:44px}
   .chip,.step{height:32px}
@@ -389,6 +407,20 @@ ol.steps li b{display:block;font-size:16px}
   </div>
 </div>
 <input type="file" id="photo" accept="image/*" hidden>
+
+<div class="cam" id="cam" hidden role="dialog" aria-modal="true" aria-labelledby="cam-t">
+  <div class="cam-v">
+    <video id="cam-video" playsinline muted autoplay></video>
+    <canvas id="cam-ov" aria-hidden="true"></canvas>
+    <div class="cam-top"><b id="cam-t">Scan cards</b><button type="button" class="cbtn" id="cam-x">Close</button></div>
+    <p class="cam-msg" id="cam-msg" aria-live="polite"></p>
+  </div>
+  <div class="cam-bot">
+    <button type="button" class="cbtn" id="cam-up">Upload</button>
+    <button type="button" class="shutter" id="cam-shot" aria-label="Take photo and read the cards"></button>
+    <button type="button" class="cbtn" id="cam-torch" aria-pressed="false" hidden>Light</button>
+  </div>
+</div>
 
 <div class="sheet" id="ksheet" hidden>
   <div class="sheet-p" role="dialog" aria-modal="true" aria-labelledby="ksheet-t">
@@ -1044,7 +1076,7 @@ ol.steps li b{display:block;font-size:16px}
       });
       if(!p.sc||p.sc.length<MAXS)h+='<button type="button" class="mc add" data-sadd="'+i+'" aria-label="Add a card to '+esc(pname(p,i))+'">+</button>';
       h+='</div><div class="sbtns">'
-        +'<button type="button" class="sbtn pri" data-scan="'+i+'"'+(ss.busy?' disabled':'')+'>'+(ss.busy?'Reading…':'Scan photo')+'</button>'
+        +'<button type="button" class="sbtn pri" data-scan="'+i+'"'+(ss.busy?' disabled':'')+'>'+(ss.busy?'Reading…':'Scan cards')+'</button>'
         +'<button type="button" class="sbtn" data-call="'+i+'" aria-pressed="'+p.called+'">Called Kaboo</button>'
         +(entered?'<button type="button" class="sbtn" data-sclear="'+i+'">Clear</button>':'<button type="button" class="sbtn" data-szero="'+i+'">No cards</button>')
         +'</div>';
@@ -1097,7 +1129,7 @@ ol.steps li b{display:block;font-size:16px}
   sbody.addEventListener('click',function(e){
     var t=e.target.closest&&e.target.closest('button');if(!t)return;
     var d=t.dataset,p;
-    if(d.scan){scanFor=S.players[+d.scan];photoIn.click();}
+    if(d.scan){scanFor=S.players[+d.scan];openCam(scanFor);}
     else if(d.call){p=S.players[+d.call];var on=!p.called;S.players.forEach(function(q){q.called=false;});p.called=on;save();renderScore();}
     else if(d.sclear){p=S.players[+d.sclear];p.sc=null;delete scanState[p.id];save();renderScore();}
     else if(d.szero){p=S.players[+d.szero];p.sc=[];save();renderScore();}
@@ -1159,6 +1191,9 @@ ol.steps li b{display:block;font-size:16px}
     var f=photoIn.files&&photoIn.files[0],p=scanFor;
     photoIn.value='';scanFor=null;
     if(!f||!p)return;
+    scanPhoto(p,f);
+  });
+  function scanPhoto(p,f){
     if(!window.KabooScan){scanState[p.id]={err:true,msg:'The card reader did not load. Reopen the app, or tap + to enter cards by hand.'};renderScore();return;}
     scanState[p.id]={busy:true,msg:'Reading the cards…'};renderScore();
     // let the busy state paint before the heavy work starts
@@ -1183,7 +1218,87 @@ ol.steps li b{display:block;font-size:16px}
         if(view==='score')renderScore();
       });
     },30);
+  }
+
+  /* ---------- in-app camera ---------- */
+  // A live camera view that outlines the cards it can see, so you know the shot is good before you take it.
+  // Falls back to the phone's own photo picker when the camera is unavailable or not allowed.
+  var camEl=$('cam'),camVideo=$('cam-video'),camOv=$('cam-ov'),camMsg=$('cam-msg'),camShot=$('cam-shot'),camTorch=$('cam-torch');
+  var camStream=null,camFor=null,camTimer=0,camSmall=document.createElement('canvas'),camSeen=0,torchOn=false;
+  function openCam(p){
+    camFor=p;
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia||!window.isSecureContext){photoIn.click();return;}
+    $('cam-t').textContent='Scan '+(p.name||'player')+'’s cards';
+    camEl.hidden=false;camShot.disabled=true;camTorch.hidden=true;torchOn=false;camSeen=0;
+    camMessage('Starting the camera…');
+    navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}}).then(function(stream){
+      if(camEl.hidden){stream.getTracks().forEach(function(t){t.stop();});return;}
+      camStream=stream;camVideo.srcObject=stream;
+      var pl=camVideo.play();if(pl&&pl.catch)pl.catch(function(){});
+      var track=stream.getVideoTracks()[0],caps=track&&track.getCapabilities?track.getCapabilities():{};
+      camTorch.hidden=!caps.torch;camTorch.setAttribute('aria-pressed','false');
+      camShot.disabled=false;
+      camMessage('Fit all the cards in view, from straight above.');
+      camTimer=setTimeout(camLoop,300);
+    }).catch(function(){
+      // no permission or no camera: the Upload button still works
+      camMessage('The camera is not available. Allow camera access for this site, or tap Upload to choose a photo.');
+    });
+  }
+  function closeCam(){
+    clearTimeout(camTimer);camTimer=0;
+    if(camStream)camStream.getTracks().forEach(function(t){t.stop();});
+    camStream=null;camVideo.srcObject=null;camEl.hidden=true;
+    camOv.getContext('2d').clearRect(0,0,camOv.width,camOv.height);
+    camFor=null;
+  }
+  function camMessage(t,ok){camMsg.textContent=t;camMsg.className='cam-msg'+(ok?' ok':'');}
+  // How the video frame maps onto the screen (the video fills the view and is cropped to fit).
+  function camFit(){
+    var vw=camVideo.videoWidth,vh=camVideo.videoHeight,W=camOv.clientWidth,H=camOv.clientHeight;
+    var s=Math.max(W/vw,H/vh);return {s:s,ox:(W-vw*s)/2,oy:(H-vh*s)/2,W:W,H:H};
+  }
+  function camLoop(){
+    camTimer=0;
+    if(camEl.hidden||!camStream)return;
+    var vw=camVideo.videoWidth,vh=camVideo.videoHeight;
+    if(vw&&vh&&window.KabooScan){
+      var k=Math.min(1,480/Math.max(vw,vh));
+      camSmall.width=Math.round(vw*k);camSmall.height=Math.round(vh*k);
+      var g=camSmall.getContext('2d',{willReadFrequently:true});g.drawImage(camVideo,0,0,camSmall.width,camSmall.height);
+      var quads=[];try{quads=KabooScan.locate(g.getImageData(0,0,camSmall.width,camSmall.height));}catch(e){}
+      var F=camFit(),dpr=window.devicePixelRatio||1;
+      camOv.width=Math.round(F.W*dpr);camOv.height=Math.round(F.H*dpr);
+      var o=camOv.getContext('2d');o.setTransform(dpr,0,0,dpr,0,0);o.clearRect(0,0,F.W,F.H);
+      o.lineWidth=3;o.strokeStyle='#d1a84e';o.fillStyle='rgba(209,168,78,.18)';
+      quads.forEach(function(q){
+        o.beginPath();
+        q.forEach(function(pt,j){var x=pt[0]/k*F.s+F.ox,y=pt[1]/k*F.s+F.oy;if(j)o.lineTo(x,y);else o.moveTo(x,y);});
+        o.closePath();o.fill();o.stroke();
+      });
+      camSeen=quads.length;
+      if(camSeen)camMessage(camSeen+' card'+(camSeen===1?'':'s')+' in view. Tap the button when they are all outlined.',true);
+      else camMessage('Fit all the cards in view, from straight above.');
+    }
+    camTimer=setTimeout(camLoop,350);
+  }
+  camShot.addEventListener('click',function(){
+    var p=camFor,vw=camVideo.videoWidth,vh=camVideo.videoHeight;
+    if(!p||!vw||!vh)return;
+    var c=document.createElement('canvas');c.width=vw;c.height=vh;
+    c.getContext('2d').drawImage(camVideo,0,0,vw,vh);
+    closeCam();
+    c.toBlob(function(blob){if(blob)scanPhoto(p,blob);},'image/jpeg',0.92);
   });
+  $('cam-x').addEventListener('click',function(){closeCam();});
+  $('cam-up').addEventListener('click',function(){scanFor=camFor;closeCam();photoIn.click();});
+  camTorch.addEventListener('click',function(){
+    var t=camStream&&camStream.getVideoTracks()[0];if(!t)return;
+    torchOn=!torchOn;
+    t.applyConstraints({advanced:[{torch:torchOn}]}).catch(function(){torchOn=false;});
+    camTorch.setAttribute('aria-pressed',String(torchOn));
+  });
+  document.addEventListener('visibilitychange',function(){if(document.hidden&&!camEl.hidden)closeCam();});
 
   /* ---------- settings ---------- */
   var setbody=$('setbody');
@@ -1210,7 +1325,7 @@ ol.steps li b{display:block;font-size:16px}
       +'<div class="sw col"><div><h4>Game ends at</h4><p>The game is over once anyone reaches this total. Lowest total wins.</p></div>'+opts('target',TARGETS,S.game.target,String)+'</div>'
       +'<div class="sw col"><div><h4>Kaboo caller penalty</h4><p>Added to the caller’s score if someone ties or beats them.</p></div>'+opts('pen',PENS,S.game.pen,function(v){return v?'+'+v:'Off';})+'</div>'
       +'<h3>Photo scanning</h3>'
-      +'<p>Card Scoring reads the cards in a photo right here on your phone. It is free, needs no account and works offline. Photos never leave the device.</p>'
+      +'<p>Tap Scan cards to open the camera: it outlines the cards it can see, so take the photo once they are all outlined. Upload picks a photo you already have. The cards are read right here on your phone. It is free, needs no account and works offline. Photos never leave the device.</p>'
       +'<p>For the best results lay the cards face up with a small gap between them, on a surface darker than the cards, and shoot from straight above in good light. Cards it is unsure of show in orange, and any it could not read show as ?. Tap either to set it.</p>'
       +'<h3>Help</h3>'
       +'<p><button type="button" class="lbtn" data-act="tour">Replay the welcome tour</button></p>';
@@ -1311,7 +1426,8 @@ ol.steps li b{display:block;font-size:16px}
 
   document.addEventListener('keydown',function(e){
     if(e.key==='Escape'){
-      if(!tour.hidden)tourClose();
+      if(!camEl.hidden)closeCam();
+      else if(!tour.hidden)tourClose();
       else if(!ksheet.hidden)closeK();
       else if(!$('rules').hidden)rulesClose();
       else if(!psheet.hidden)closePlayers();
