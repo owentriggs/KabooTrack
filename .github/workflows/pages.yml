@@ -22,7 +22,7 @@ jobs:
       - name: Build site
         run: |
           mkdir _site
-          cp index.html sw.js manifest.webmanifest icon.svg icon-*.png .nojekyll _site/
+          cp index.html scan.js sw.js manifest.webmanifest icon.svg icon-*.png .nojekyll _site/
           # New cache name per release so installed copies pick up the update.
           sed -i "s/var VERSION='dev';/var VERSION='${GITHUB_SHA::8}';/" _site/sw.js
           grep -q "VERSION='${GITHUB_SHA::8}'" _site/sw.js

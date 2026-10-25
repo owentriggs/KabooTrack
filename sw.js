@@ -3,7 +3,7 @@
 var VERSION='dev';
 var CACHE='kaboo-'+VERSION;
 var FONTS='kaboo-fonts';
-var SHELL=['./','index.html','manifest.webmanifest','icon.svg','icon-180.png','icon-192.png','icon-512.png','icon-maskable-512.png'];
+var SHELL=['./','index.html','scan.js','manifest.webmanifest','icon.svg','icon-180.png','icon-192.png','icon-512.png','icon-maskable-512.png'];
 
 self.addEventListener('install',function(e){
   e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(SHELL);}).then(function(){return self.skipWaiting();}));
