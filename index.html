@@ -229,6 +229,57 @@ ol.steps li b{display:block;font-size:16px}
 .ill .sm{font-size:13px;color:var(--dim)}
 .ill .brass{color:var(--brass)}
 
+/* home */
+.home{position:fixed;inset:0;z-index:15;background:var(--felt);display:flex;justify-content:center;overflow-y:auto}
+.home-c{width:100%;max-width:440px;min-height:100%;display:flex;flex-direction:column;gap:18px;padding-top:calc(20px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.home-h h1{margin:0;font:800 34px/1 var(--ui);letter-spacing:-.02em}
+.home-h p{margin:6px 0 0;font-size:15px;color:var(--dim)}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.tile{display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-height:150px;padding:16px 14px;border:1px solid var(--line);border-radius:18px;background:var(--panel);text-align:left}
+.tile:active{background:var(--line)}
+.tile svg{flex:none;width:34px;height:34px;margin-bottom:auto;color:var(--brass)}
+.tile b{font:800 18px/1.15 var(--ui)}
+.tile span{font-size:13px;line-height:1.35;color:var(--dim)}
+.tile.big{grid-column:1/-1;min-height:120px}
+.homebtn{flex:none;width:34px;padding:0;display:flex;align-items:center;justify-content:center}
+.lead{display:flex;align-items:center;gap:10px;min-width:0}
+.vtools{display:flex;gap:6px}
+
+/* card scoring */
+.srow{padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--panel);margin-bottom:10px}
+.srow.done{border-color:var(--back-line)}
+.srow-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}
+.srow-h b{font:700 17px/1.2 var(--ui);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srow-h span{flex:none;font-size:13px;color:var(--dim);font-variant-numeric:tabular-nums}
+.srow-h span strong{font:800 22px/1 var(--ui);color:var(--ink)}
+.scards{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.scards .mc{cursor:pointer;padding:0}
+.scards .mc.red{color:var(--red-face)}
+.scards .mc.add{background:none}
+.sbtns{display:flex;gap:6px;flex-wrap:wrap}
+.sbtn{height:38px;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:var(--felt);font-weight:600;font-size:14px}
+.sbtn.pri{background:var(--brass);border-color:var(--brass);color:var(--felt)}
+.sbtn[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--felt)}
+.sbtn:disabled{opacity:.4}
+.smsg{margin:8px 0 0;font-size:13px;color:var(--dim)}
+.smsg.err{color:var(--warn)}
+.smsg.busy{color:var(--brass)}
+.sbar{flex:none;display:grid;grid-template-columns:minmax(0,1fr);gap:6px;padding-bottom:12px}
+.sbar .act{width:100%}
+.sbar p{margin:0;min-height:16px;text-align:center;font-size:13px;color:var(--dim)}
+.sbar p.live{color:var(--brass)}
+.stand{margin:0 0 10px;padding:0;list-style:none;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.stand li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-top:1px solid var(--line)}
+.stand li:first-child{border-top:0}
+.stand li.lead{background:var(--panel)}
+.stand li b{flex:none;min-width:0;max-width:40%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;font-size:15px}
+.stand li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+.stand li strong{flex:none;font:800 19px/1 var(--ui);font-variant-numeric:tabular-nums}
+.stand li.out strong{color:var(--warn)}
+.keyrow{display:flex;gap:6px;margin:0 0 8px}
+.keyrow input{flex:1;min-width:0;height:44px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--felt);color:var(--ink);font:500 15px/1 var(--ui);user-select:text;-webkit-user-select:text}
+#ksheet{z-index:28}
+
 @media (max-height:600px){
   .act{height:44px}
   .chip,.step{height:32px}
@@ -244,7 +295,10 @@ ol.steps li b{display:block;font-size:16px}
 
 <div class="app">
   <header class="top">
-    <div class="brand"><h1>Kaboo</h1><small id="stats"></small></div>
+    <div class="lead">
+      <button type="button" class="tbtn homebtn" data-go="home" aria-label="Home"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
+      <div class="brand"><h1>Kaboo</h1><small id="stats"></small></div>
+    </div>
     <div class="tools">
       <button type="button" class="tbtn" id="rulesbtn">Rules</button>
       <button type="button" class="tbtn" id="newround">New round</button>
@@ -297,6 +351,59 @@ ol.steps li b{display:block;font-size:16px}
   </div>
 </div>
 
+<div class="home" id="home">
+  <div class="home-c">
+    <div class="home-h"><h1>Kaboo</h1><p>What do you need?</p></div>
+    <div class="tiles">
+      <button type="button" class="tile big" data-go="track">
+        <svg viewBox="0 0 34 34" aria-hidden="true"><rect x="4" y="7" width="13" height="19" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><rect x="17" y="7" width="13" height="19" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 16.5c1.4-2.2 3.6-2.2 5 0-1.4 2.2-3.6 2.2-5 0z" fill="currentColor"/><path d="M23.5 13v7M20 16.5h7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <b>Kaboo Tracker</b><span id="home-track">Remember every card while you play.</span>
+      </button>
+      <button type="button" class="tile" data-go="score">
+        <svg viewBox="0 0 34 34" aria-hidden="true"><path d="M4 11.5A2.5 2.5 0 0 1 6.5 9h4l2-3h9l2 3h4a2.5 2.5 0 0 1 2.5 2.5v14A2.5 2.5 0 0 1 27.5 28h-21A2.5 2.5 0 0 1 4 25.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="17" cy="18" r="5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <b>Card Scoring</b><span id="home-score">Snap each hand, get the total.</span>
+      </button>
+      <button type="button" class="tile" data-go="settings">
+        <svg viewBox="0 0 34 34" aria-hidden="true"><path d="M6 10h13M25 10h3M6 24h3M15 24h13M6 17h6M18 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="22" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="24" r="3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="15" cy="17" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <b>Settings</b><span>Card values, table rules, photo scanning.</span>
+      </button>
+      <button type="button" class="tile big" data-go="rules">
+        <svg viewBox="0 0 34 34" aria-hidden="true"><path d="M17 9c-3-2-7-2.5-11-2v19c4-.5 8 0 11 2 3-2 7-2.5 11-2V7c-4-.5-8 0-11 2zM17 9v19" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        <b>Rule book</b><span>How to play, powers, matching and scoring.</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="rules" id="score" hidden>
+  <div class="rules-c" role="dialog" aria-modal="true" aria-labelledby="score-t">
+    <div class="rules-h"><h2 id="score-t">Card Scoring</h2>
+      <div class="vtools"><button type="button" id="score-new">New game</button><button type="button" data-go="home">Home</button></div>
+    </div>
+    <div class="rbody" id="sbody"></div>
+    <div class="sbar">
+      <p id="score-hint" aria-live="polite"></p>
+      <button type="button" class="act" id="score-save">Save round</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="photo" accept="image/*" hidden>
+
+<div class="sheet" id="ksheet" hidden>
+  <div class="sheet-p" role="dialog" aria-modal="true" aria-labelledby="ksheet-t">
+    <div class="sheet-h"><h2 id="ksheet-t">Which card?</h2><button type="button" id="ksheet-x">Close</button></div>
+    <div class="skeys" id="kkeys"></div>
+    <div class="sact" id="kextra"><button type="button" id="k-del" style="grid-column:1/-1">Remove this card</button></div>
+  </div>
+</div>
+
+<div class="rules" id="settings" hidden>
+  <div class="rules-c" role="dialog" aria-modal="true" aria-labelledby="settings-t">
+    <div class="rules-h"><h2 id="settings-t">Settings</h2><button type="button" data-go="home">Home</button></div>
+    <div class="rbody" id="setbody"></div>
+  </div>
+</div>
+
 <div class="tour" id="tour" hidden>
   <div class="tour-c" role="dialog" aria-modal="true" aria-labelledby="tour-t">
     <div class="ill" id="tour-i"></div>
@@ -319,17 +426,22 @@ ol.steps li b{display:block;font-size:16px}
   // Card values. Change here if your table plays different values.
   var VAL={A:1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,J:11,Q:12,K:15,Kr:-1,Jk:0};
   var FULLNAME={Kr:'Red king',Jk:'Joker'};
-  var STORE='kaboo-memory-v3',TOURKEY='kaboo-tour-v2';
-  var MAXP=6,MINP=2,MAXC=9;
+  var STORE='kaboo-memory-v3',TOURKEY='kaboo-tour-v2',KEYSTORE='kaboo-api-key';
+  var MAXP=6,MINP=2,MAXC=9,MAXS=12;
+  var TARGETS=[50,100,150,200],PENS=[0,5,10,20];
 
   function has(k){return Object.prototype.hasOwnProperty.call(VAL,k);}
   function lab(k){if(k==='Kr')return 'K♥♦';if(k==='K'&&S.rules.rk)return 'K♠♣';return k;}
   function val(k){var o=S.values&&S.values[k];return typeof o==='number'?o:VAL[k];}
   function fmtv(v){return v<0?'−'+(-v):String(v);}
+  function esc(t){return String(t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function nameOf(k){if(k==='K'&&S.rules.rk)return 'Black king';return FULLNAME[k]||k;}
   function mkCards(){return [null,null,null,null];}
+  var nextId=1;
+  // sc: cards entered in Card Scoring this round (null = not entered yet), hist: saved round scores.
+  function mkPlayer(n){return {id:nextId++,name:n,cards:mkCards(),sc:null,hist:[],called:false};}
   function fresh(){
-    return {players:['You','P2','P3','P4'].map(function(n){return {name:n,cards:mkCards()};}),disc:{},cur:0,rules:{jokers:true,rk:true},values:{}};
+    return {players:['You','P2','P3','P4'].map(mkPlayer),disc:{},cur:0,rules:{jokers:true,rk:true},values:{},game:{target:100,pen:10}};
   }
   function load(){
     try{
@@ -339,7 +451,16 @@ ol.steps li b{display:block;font-size:16px}
         p.name=String(p.name||'').slice(0,10);
         var src=Array.isArray(p.cards)?p.cards.slice(0,MAXC):mkCards();
         p.cards=src.map(function(x){if(x==='Kd')x='Kr';return typeof x==='string'&&has(x)?x:null;});
+        p.sc=Array.isArray(p.sc)?p.sc.filter(function(x){return typeof x==='string'&&has(x);}).slice(0,MAXS):null;
+        p.hist=Array.isArray(p.hist)?p.hist.filter(function(n){return typeof n==='number'&&isFinite(n);}):[];
+        p.called=p.called===true;
       });
+      var ids={};
+      s.players.forEach(function(p){if(typeof p.id==='number'&&p.id>0&&!ids[p.id])ids[p.id]=1;else p.id=0;});
+      nextId=Object.keys(ids).reduce(function(a,k){return Math.max(a,+k+1);},1);
+      s.players.forEach(function(p){if(!p.id)p.id=nextId++;});
+      var g=s.game||{};
+      s.game={target:TARGETS.indexOf(g.target)>=0?g.target:100,pen:PENS.indexOf(g.pen)>=0?g.pen:10};
       var d={};
       if(s.disc&&typeof s.disc==='object'){Object.keys(s.disc).forEach(function(k){var kk=k==='Kd'?'Kr':k;if(has(kk)&&s.disc[k]>0)d[kk]=(d[kk]||0)+(s.disc[k]|0);});}
       s.disc=d;
@@ -378,13 +499,17 @@ ol.steps li b{display:block;font-size:16px}
 
   function snap(){hist.push(JSON.stringify({players:S.players,disc:S.disc,rules:S.rules,cur:S.cur}));if(hist.length>60)hist.shift();}
   function restore(str){
-    var o=JSON.parse(str);S.players=o.players;S.disc=o.disc;S.rules=o.rules;
+    var o=JSON.parse(str),keep={};
+    S.players.forEach(function(p){keep[p.id]={sc:p.sc,hist:p.hist,called:p.called};});
+    o.players.forEach(function(p){var k=keep[p.id];if(k){p.sc=k.sc;p.hist=k.hist;p.called=k.called;}});
+    S.players=o.players;S.disc=o.disc;S.rules=o.rules;
     if(typeof o.cur==='number')S.cur=o.cur;
     if(S.cur>=S.players.length)S.cur=S.players.length-1;
     swapOn=false;swapFirst=null;
     buildSheetKeys();buildBoards();update();save();
     if(!$('rules').hidden)renderRules(rtab);
     if(!psheet.hidden)renderPlist();
+    if(view==='score')renderScore();
   }
   function flash(t){
     flashText=t;clearTimeout(flashT);
@@ -438,7 +563,7 @@ ol.steps li b{display:block;font-size:16px}
   }
   function addPlayer(){
     if(S.players.length>=MAXP)return;
-    snap();S.players.push({name:'P'+(S.players.length+1),cards:mkCards()});
+    snap();S.players.push(mkPlayer('P'+(S.players.length+1)));
     S.cur=S.players.length-1;buildBoards();update();save();
   }
   function removePlayer(){
@@ -787,7 +912,7 @@ ol.steps li b{display:block;font-size:16px}
       +'<p>Instead of a normal turn, call Kaboo. Every other player then gets exactly one more turn, and the round is over.</p>'
       +'<p>A round also ends if someone gets rid of their last card, or the draw pile runs out. Many tables shuffle the discard pile into a new draw pile and carry on. Agree on this beforehand.</p>'
       +'<h3>Scoring</h3>'
-      +'<p>Everyone turns their cards face up and adds up the values. The lowest total wins the round, and an empty hand counts as 0. Tap any card below to change its value to match your table.</p>'
+      +'<p>Everyone turns their cards face up and adds up the values. The lowest total wins the round, and an empty hand counts as 0. Tap any card below to change its value to match your table, or change it later in Settings.</p>'
       +'<div class="vals">'+rk+'</div>'+valEditor()
       +'<p>For a longer game, keep running totals over several rounds and play until someone passes 100. Some tables add a penalty when the caller does not finish lowest. Editions differ on these details, so settle them first.</p>';},
     table:function(){return ''
@@ -816,20 +941,330 @@ ol.steps li b{display:block;font-size:16px}
   }
   function rulesOpen(){$('rules').hidden=false;renderRules(rtab);$('rules-x').focus();}
   function rulesClose(){$('rules').hidden=true;}
-  $('rbody').addEventListener('click',function(e){
+  // Value and table-rule controls, shared by the rule book and Settings. Returns true if it handled the tap.
+  function ruleControls(e,rerender){
     var tg=e.target.closest&&e.target.closest('[data-tg]');
-    if(tg){setRule(tg.dataset.tg,tg.getAttribute('aria-checked')!=='true');renderRules(rtab,true);return;}
+    if(tg){setRule(tg.dataset.tg,tg.getAttribute('aria-checked')!=='true');rerender();return true;}
     var vb=e.target.closest&&e.target.closest('[data-v]');
-    if(vb){editK=(editK===vb.dataset.v)?null:vb.dataset.v;renderRules(rtab,true);return;}
+    if(vb){editK=(editK===vb.dataset.v)?null:vb.dataset.v;rerender();return true;}
     var vd=e.target.closest&&e.target.closest('[data-vd]');
-    if(vd&&editK){setValue(editK,val(editK)+parseInt(vd.dataset.vd,10));renderRules(rtab,true);return;}
+    if(vd&&editK){setValue(editK,val(editK)+parseInt(vd.dataset.vd,10));rerender();return true;}
     var vr=e.target.closest&&e.target.closest('[data-vr]');
-    if(vr&&editK){setValue(editK,VAL[editK]);renderRules(rtab,true);return;}
+    if(vr&&editK){setValue(editK,VAL[editK]);rerender();return true;}
+    return false;
+  }
+  $('rbody').addEventListener('click',function(e){
+    if(ruleControls(e,function(){renderRules(rtab,true);}))return;
     var act=e.target.closest&&e.target.closest('[data-act]');
     if(act&&act.dataset.act==='tour'){rulesClose();tourOpen();}
   });
   $('rulesbtn').addEventListener('click',rulesOpen);
   $('rules-x').addEventListener('click',rulesClose);
+
+  /* ---------- screens ---------- */
+  var homeEl=$('home'),scoreEl=$('score'),setEl=$('settings'),view='home';
+  var seenTour=false;
+  try{seenTour=!!localStorage.getItem(TOURKEY);}catch(e){}
+  function go(v){
+    if(v==='rules'){rulesOpen();return;}
+    if(!$('rules').hidden)rulesClose();
+    view=v;
+    homeEl.hidden=v!=='home';scoreEl.hidden=v!=='score';setEl.hidden=v!=='settings';
+    if(v==='home')renderHome();
+    if(v==='score')renderScore();
+    if(v==='settings')renderSettings();
+    if(v==='track'){
+      buildSheetKeys();update();
+      requestAnimationFrame(function(){pager.style.scrollBehavior='auto';pager.scrollLeft=S.cur*pager.clientWidth;pager.style.scrollBehavior='';});
+      if(!seenTour)tourOpen();
+    }
+  }
+  document.addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('[data-go]');
+    if(b){e.preventDefault();go(b.dataset.go);}
+  });
+  function renderHome(){
+    var known=0;
+    S.players.forEach(function(p){p.cards.forEach(function(x){if(x)known++;});});
+    $('home-track').textContent=known?S.players.length+' players · '+known+' card'+(known===1?'':'s')+' recorded':'Remember every card while you play.';
+    var r=roundsPlayed();
+    $('home-score').textContent=r?'Round '+(r+1)+' · '+r+' saved':'Snap each hand, get the total.';
+  }
+  // Arm-then-confirm for destructive buttons, like New round.
+  function confirmTap(btn,label,fn){
+    if(btn.dataset.armed){clearTimeout(+btn.dataset.armed);delete btn.dataset.armed;btn.textContent=label;btn.classList.remove('armed');fn();return;}
+    btn.textContent='Sure?';btn.classList.add('armed');
+    btn.dataset.armed=String(setTimeout(function(){delete btn.dataset.armed;btn.textContent=label;btn.classList.remove('armed');},3000));
+  }
+
+  /* ---------- card scoring ---------- */
+  var sbody=$('sbody'),scoreHint=$('score-hint'),saveBtn=$('score-save'),photoIn=$('photo');
+  var scanState={},scanFor=null,kTarget=null,scoreFlash='',scoreFlashT=0;
+  function handTotal(list){return (list||[]).reduce(function(a,k){return a+val(k);},0);}
+  function gameTotal(p){return p.hist.reduce(function(a,n){return a+n;},0);}
+  function roundsPlayed(){return S.players.reduce(function(a,p){return Math.max(a,p.hist.length);},0);}
+  function pname(p,i){return p.name||('P'+(i+1));}
+  function chip(k,attrs){return '<button type="button" class="mc f'+(k==='Kr'?' red':'')+'" '+attrs+'>'+(k==='Kr'?'K':k==='Jk'?'★':k)+'</button>';}
+  function sflash(t){scoreFlash=t;clearTimeout(scoreFlashT);scoreFlashT=setTimeout(function(){scoreFlash='';renderScoreBar();},2600);}
+  // Final points for this round, with the caller penalty applied.
+  function roundScores(){
+    var base=S.players.map(function(p){return handTotal(p.sc);});
+    var out=base.slice(),ci=-1;
+    S.players.forEach(function(p,i){if(p.called)ci=i;});
+    if(ci>=0&&S.game.pen){
+      var beaten=base.some(function(v,i){return i!==ci&&v<=base[ci];});
+      if(beaten)out[ci]+=S.game.pen;
+    }
+    return {pts:out,ci:ci,pen:ci>=0&&out[ci]!==base[ci]};
+  }
+  function renderScore(){
+    var st=sbody.scrollTop,r=roundsPlayed(),rs=roundScores(),h='';
+    var over=S.players.some(function(p){return gameTotal(p)>=S.game.target;});
+    h+='<p class="psub">'+(over?'Game over. Start a new game when you are ready.':'Round '+(r+1)+'. At the end, scan or tap in each hand. First to '+S.game.target+' ends the game.')+'</p>';
+    S.players.forEach(function(p,i){
+      var ss=scanState[p.id]||{},entered=p.sc!==null;
+      h+='<div class="srow'+(entered?' done':'')+'"><div class="srow-h"><b>'+esc(pname(p,i))+'</b><span>'
+        +(entered?'<strong>'+fmtv(rs.pts[i])+'</strong> pts'+(rs.pen&&rs.ci===i?' (incl. +'+S.game.pen+')':''):'not entered')
+        +'</span></div>';
+      h+='<div class="scards">';
+      (p.sc||[]).forEach(function(k,j){h+=chip(k,'data-sc="'+i+':'+j+'" aria-label="'+esc(nameOf(k))+', '+fmtv(val(k))+' points. Tap to change"');});
+      if(!p.sc||p.sc.length<MAXS)h+='<button type="button" class="mc add" data-sadd="'+i+'" aria-label="Add a card to '+esc(pname(p,i))+'">+</button>';
+      h+='</div><div class="sbtns">'
+        +'<button type="button" class="sbtn pri" data-scan="'+i+'"'+(ss.busy?' disabled':'')+'>'+(ss.busy?'Reading…':'Scan photo')+'</button>'
+        +'<button type="button" class="sbtn" data-call="'+i+'" aria-pressed="'+p.called+'">Called Kaboo</button>'
+        +(entered?'<button type="button" class="sbtn" data-sclear="'+i+'">Clear</button>':'<button type="button" class="sbtn" data-szero="'+i+'">No cards</button>')
+        +'</div>';
+      if(ss.msg)h+='<p class="smsg'+(ss.err?' err':ss.busy?' busy':'')+'">'+esc(ss.msg)+'</p>';
+      h+='</div>';
+    });
+    if(r){
+      var low=Math.min.apply(null,S.players.map(gameTotal));
+      h+='<h3>Standings</h3><ol class="stand">';
+      S.players.forEach(function(p,i){
+        var t=gameTotal(p);
+        h+='<li class="'+(t===low?'lead':'')+(t>=S.game.target?' out':'')+'"><b>'+esc(pname(p,i))+'</b><span>'+(p.hist.map(fmtv).join(' · ')||'–')+'</span><strong>'+fmtv(t)+'</strong></li>';
+      });
+      h+='</ol>';
+      if(over){
+        var win=S.players.filter(function(p){return gameTotal(p)===low;}).map(function(p){return pname(p,S.players.indexOf(p));});
+        h+='<div class="note"><b>Game over</b><p>'+esc(win.join(' and '))+(win.length>1?' share the win':' wins')+' with '+fmtv(low)+'.</p></div>';
+      }
+      h+='<p style="margin-top:12px"><button type="button" class="lbtn" data-sundo="1">Undo last saved round</button></p>';
+    }
+    if(!apiKey())h+='<div class="note"><b>Photo scanning</b><p>To read cards from a photo, add an Anthropic API key in <a href="#" data-go="settings">Settings</a>. You can always tap cards in by hand with +.</p></div>';
+    sbody.innerHTML=h;sbody.scrollTop=st;
+    renderScoreBar();
+  }
+  function renderScoreBar(){
+    var missing=S.players.filter(function(p){return p.sc===null;}).length;
+    saveBtn.disabled=missing>0;
+    var t=scoreFlash;
+    if(!t)t=missing?missing+' hand'+(missing===1?'':'s')+' still to enter.':'All hands in. Save the round to add it to the standings.';
+    scoreHint.textContent=t;scoreHint.className=scoreFlash?'live':'';
+  }
+  function saveRound(){
+    if(S.players.some(function(p){return p.sc===null;}))return;
+    var rs=roundScores();
+    S.players.forEach(function(p,i){p.hist.push(rs.pts[i]);p.sc=null;p.called=false;});
+    scanState={};save();
+    sflash('Round '+roundsPlayed()+' saved.');
+    renderScore();sbody.scrollTop=sbody.scrollHeight;
+  }
+  function undoRound(){
+    var r=roundsPlayed();if(!r)return;
+    S.players.forEach(function(p){if(p.hist.length===r)p.hist.pop();});
+    save();sflash('Last round removed.');renderScore();
+  }
+  sbody.addEventListener('click',function(e){
+    var t=e.target.closest&&e.target.closest('button');if(!t)return;
+    var d=t.dataset,p;
+    if(d.scan){scanFor=S.players[+d.scan];if(!apiKey()){scanState[scanFor.id]={err:true,msg:'Add your API key in Settings first, or tap + to enter cards by hand.'};renderScore();return;}photoIn.click();}
+    else if(d.call){p=S.players[+d.call];var on=!p.called;S.players.forEach(function(q){q.called=false;});p.called=on;save();renderScore();}
+    else if(d.sclear){p=S.players[+d.sclear];p.sc=null;delete scanState[p.id];save();renderScore();}
+    else if(d.szero){p=S.players[+d.szero];p.sc=[];save();renderScore();}
+    else if(d.sadd){openK(+d.sadd,-1);}
+    else if(d.sc){var a=d.sc.split(':');openK(+a[0],+a[1]);}
+    else if(d.sundo){undoRound();}
+  });
+  saveBtn.addEventListener('click',saveRound);
+  $('score-new').addEventListener('click',function(){
+    confirmTap(this,'New game',function(){
+      S.players.forEach(function(p){p.hist=[];p.sc=null;p.called=false;});
+      scanState={};save();sflash('New game. Scores cleared.');renderScore();
+    });
+  });
+
+  // Card picker for Card Scoring.
+  var ksheet=$('ksheet'),kkeys=$('kkeys');
+  function openK(pi,ci){
+    kTarget={p:S.players[pi],i:ci};
+    kkeys.innerHTML='';
+    ranks().forEach(function(r){
+      var b=document.createElement('button');b.type='button';b.className='skey'+(r.k==='Kr'?' red':'');
+      b.setAttribute('aria-label',nameOf(r.k));
+      b.innerHTML=lab(r.k)+'<span class="n">'+fmtv(r.v)+'</span>';
+      b.addEventListener('click',function(){pickK(r.k);});
+      kkeys.appendChild(b);
+    });
+    $('ksheet-t').textContent=ci<0?'Add a card for '+pname(kTarget.p,pi):'Change this card';
+    $('kextra').hidden=ci<0;
+    ksheet.hidden=false;
+  }
+  function closeK(){ksheet.hidden=true;kTarget=null;}
+  function pickK(k){
+    var p=kTarget.p;
+    if(!p.sc)p.sc=[];
+    if(kTarget.i<0)p.sc.push(k);else p.sc[kTarget.i]=k;
+    save();closeK();renderScore();
+  }
+  $('k-del').addEventListener('click',function(){
+    if(kTarget&&kTarget.p.sc&&kTarget.i>=0){kTarget.p.sc.splice(kTarget.i,1);save();}
+    closeK();renderScore();
+  });
+  $('ksheet-x').addEventListener('click',closeK);
+  ksheet.addEventListener('click',function(e){if(e.target===ksheet)closeK();});
+
+  /* ---------- photo scanning ---------- */
+  // The photo goes straight from this device to the Anthropic API with the player's own key. Nothing else sees it.
+  var SCAN_MODEL='claude-opus-5-5';
+  var SCAN_RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K','Joker'];
+  var SCAN_SCHEMA={type:'object',additionalProperties:false,required:['cards','problem'],properties:{
+    cards:{type:'array',items:{type:'object',additionalProperties:false,required:['rank','red'],properties:{
+      rank:{type:'string',enum:SCAN_RANKS},red:{type:'boolean'}}}},
+    problem:{type:'string'}}};
+  var SCAN_PROMPT='This photo was taken at the end of a round of Kaboo, a version of the card game Cabo. '
+    +'It shows one player\'s cards turned face up, usually laid out in a grid. '
+    +'List every face-up playing card in the photo exactly once, in reading order: top row left to right, then the next row. '
+    +'For each card give its rank, and set red to true when its suit is hearts or diamonds (for a joker, true if it is the red one). '
+    +'Look closely at each card\'s corner index so that 6 and 9, and 10 and J, are not confused. '
+    +'Ignore anything that is not a face-up card, such as the table, face-down cards or a deck. '
+    +'If no cards can be read, return an empty list and say why in problem, in one short sentence. Otherwise leave problem empty.';
+  function apiKey(){try{return localStorage.getItem(KEYSTORE)||'';}catch(e){return '';}}
+  function shrink(file){
+    return new Promise(function(res,rej){
+      var url=URL.createObjectURL(file),img=new Image();
+      img.onload=function(){
+        var w=img.naturalWidth,h=img.naturalHeight,s=Math.min(1,1568/Math.max(w,h));
+        var c=document.createElement('canvas');c.width=Math.max(1,Math.round(w*s));c.height=Math.max(1,Math.round(h*s));
+        c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+        URL.revokeObjectURL(url);
+        res(c.toDataURL('image/jpeg',0.85).split(',')[1]);
+      };
+      img.onerror=function(){URL.revokeObjectURL(url);rej(new Error('That photo could not be opened. Try another one.'));};
+      img.src=url;
+    });
+  }
+  function readCards(b64,key){
+    return fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'content-type':'application/json',
+        'x-api-key':key,
+        'anthropic-version':'2026-10-21',
+        'anthropic-beta':'server-side-fallback-2026-07-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:SCAN_MODEL,max_tokens:16000,fallbacks:'default',
+        output_config:{effort:'medium',format:{type:'json_schema',schema:SCAN_SCHEMA}},
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
+          {type:'text',text:SCAN_PROMPT}
+        ]}]
+      })
+    }).catch(function(){throw new Error('Could not reach the card reader. Check your connection.');})
+    .then(function(res){
+      return res.json().catch(function(){return {};}).then(function(body){
+        if(res.status===401||res.status===403)throw new Error('The API key was not accepted. Check it in Settings.');
+        if(res.status===429)throw new Error('Too many scans at once. Wait a moment and try again.');
+        if(res.status>=500)throw new Error('The card reader is busy. Try again in a moment.');
+        if(!res.ok)throw new Error((body.error&&body.error.message)||('The card reader returned an error ('+res.status+').'));
+        if(body.stop_reason==='refusal')throw new Error('The card reader could not read this photo. Enter the cards by hand.');
+        var txt=(body.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
+        var out;try{out=JSON.parse(txt);}catch(e){throw new Error('The card reader gave an answer the app could not use. Try again.');}
+        return out;
+      });
+    });
+  }
+  function toKeys(out){
+    return (out.cards||[]).map(function(c){
+      if(c.rank==='Joker')return 'Jk';
+      if(c.rank==='K'&&c.red&&S.rules.rk)return 'Kr';
+      return has(c.rank)?c.rank:null;
+    }).filter(Boolean).slice(0,MAXS);
+  }
+  photoIn.addEventListener('change',function(){
+    var f=photoIn.files&&photoIn.files[0],p=scanFor;
+    photoIn.value='';scanFor=null;
+    if(!f||!p)return;
+    if(navigator.onLine===false){scanState[p.id]={err:true,msg:'Scanning needs an internet connection. Tap + to enter cards by hand.'};renderScore();return;}
+    scanState[p.id]={busy:true,msg:'Reading the cards. This takes a few seconds.'};renderScore();
+    shrink(f).then(function(b64){return readCards(b64,apiKey());}).then(function(out){
+      var keys=toKeys(out);
+      if(!keys.length){scanState[p.id]={err:true,msg:out.problem||'No cards found. Try a closer, brighter photo, or tap + to add them.'};}
+      else{
+        p.sc=keys;save();
+        scanState[p.id]={msg:keys.length+' card'+(keys.length===1?'':'s')+' found, '+fmtv(handTotal(keys))+' points. Tap a card if it was misread.'};
+      }
+      if(view==='score')renderScore();
+    }).catch(function(err){
+      scanState[p.id]={err:true,msg:err.message};
+      if(view==='score')renderScore();
+    });
+  });
+
+  /* ---------- settings ---------- */
+  var setbody=$('setbody');
+  function opts(name,list,cur,fmt){
+    return '<div class="opts">'+list.map(function(v){return '<button type="button" class="opt" data-'+name+'="'+v+'" aria-pressed="'+(v===cur)+'">'+fmt(v)+'</button>';}).join('')+'</div>';
+  }
+  function renderSettings(){
+    var st=setbody.scrollTop,key=apiKey();
+    var rk=ranks().map(function(r){
+      return '<button type="button" class="vi'+(r.k==='Kr'?' red':'')+(editK===r.k?' on':'')+'" data-v="'+r.k+'" aria-pressed="'+(editK===r.k)+'" aria-label="'+nameOf(r.k)+', '+fmtv(r.v)+' points"><b>'+lab(r.k)+'</b><i>'+fmtv(r.v)+'</i></button>';
+    }).join('');
+    var custom=Object.keys(S.values||{}).length>0;
+    setbody.innerHTML=''
+      +'<h3>Card values</h3>'
+      +'<p>Tap a card to change what it is worth. The Tracker and Card Scoring both use these.</p>'
+      +'<div class="vals">'+rk+'</div>'+valEditor()
+      +'<p><button type="button" class="lbtn" data-allreset="1"'+(custom?'':' disabled')+'>Reset all values</button></p>'
+      +'<h3>Table rules</h3>'
+      +'<div class="sw"><div><h4>Jokers in the deck</h4><p>2 jokers, each worth 0.</p></div>'
+      +'<button type="button" class="tg" role="switch" data-tg="jokers" aria-checked="'+S.rules.jokers+'" aria-label="Jokers in the deck"></button></div>'
+      +'<div class="sw"><div><h4>Red kings count separately</h4><p>Hearts and diamonds get their own key and value. Turn off to treat every king the same.</p></div>'
+      +'<button type="button" class="tg" role="switch" data-tg="rk" aria-checked="'+S.rules.rk+'" aria-label="Red kings count separately"></button></div>'
+      +'<h3>Game scoring</h3>'
+      +'<div class="sw col"><div><h4>Game ends at</h4><p>The game is over once anyone reaches this total. Lowest total wins.</p></div>'+opts('target',TARGETS,S.game.target,String)+'</div>'
+      +'<div class="sw col"><div><h4>Kaboo caller penalty</h4><p>Added to the caller’s score if someone ties or beats them.</p></div>'+opts('pen',PENS,S.game.pen,function(v){return v?'+'+v:'Off';})+'</div>'
+      +'<h3>Photo scanning</h3>'
+      +'<p>Card Scoring reads cards from a photo using Claude, Anthropic’s AI. It needs your own Anthropic API key, which you can create at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>. Each scan costs about a cent.</p>'
+      +'<div class="keyrow"><input id="keyin" type="password" autocomplete="off" spellcheck="false" placeholder="'+(key?'Key saved ('+esc(key.slice(0,10))+'…)':'sk-ant-…')+'" aria-label="Anthropic API key">'
+      +'<button type="button" class="lbtn" data-keysave="1">Save</button></div>'
+      +(key?'<p><button type="button" class="lbtn" data-keyclear="1">Remove key</button></p>':'')
+      +'<p class="vhint">The key is kept only on this device. Photos go straight from here to Anthropic and nowhere else.</p>'
+      +'<h3>Help</h3>'
+      +'<p><button type="button" class="lbtn" data-act="tour">Replay the welcome tour</button></p>';
+    setbody.scrollTop=st;
+  }
+  setbody.addEventListener('click',function(e){
+    if(ruleControls(e,renderSettings))return;
+    var t=e.target.closest&&e.target.closest('button');if(!t)return;
+    var d=t.dataset;
+    if(d.target){S.game.target=+d.target;save();renderSettings();}
+    else if(d.pen!==undefined){S.game.pen=+d.pen;save();renderSettings();}
+    else if(d.allreset){S.values={};editK=null;save();update();renderSettings();}
+    else if(d.keysave){
+      var v=$('keyin').value.trim();
+      if(v){try{localStorage.setItem(KEYSTORE,v);}catch(err){}}
+      renderSettings();
+    }
+    else if(d.keyclear){try{localStorage.removeItem(KEYSTORE);}catch(err){}renderSettings();}
+    else if(d.act==='tour'){tourOpen();}
+  });
+  setbody.addEventListener('keydown',function(e){
+    if(e.key==='Enter'&&e.target.id==='keyin'){var b=setbody.querySelector('[data-keysave]');if(b)b.click();}
+  });
 
   /* ---------- welcome tour ---------- */
   var arrows='<svg width="40" height="26" viewBox="0 0 40 26" aria-hidden="true"><path d="M5 9h28M26 3l7 6-7 6M35 18H7M14 12l-7 6 7 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -867,7 +1302,7 @@ ol.steps li b{display:block;font-size:16px}
   }
   function tourOpen(){tourI=0;tour.hidden=false;tourRender();$('tour-next').focus();}
   function tourClose(){
-    tour.hidden=true;
+    tour.hidden=true;seenTour=true;
     try{localStorage.setItem(TOURKEY,'1');}catch(e){}
   }
   $('tour-next').addEventListener('click',function(){if(tourI>=STEPS.length-1)tourClose();else{tourI++;tourRender();}});
@@ -917,22 +1352,22 @@ ol.steps li b{display:block;font-size:16px}
   document.addEventListener('keydown',function(e){
     if(e.key==='Escape'){
       if(!tour.hidden)tourClose();
+      else if(!ksheet.hidden)closeK();
       else if(!$('rules').hidden)rulesClose();
       else if(!psheet.hidden)closePlayers();
       else if(!sheet.hidden)closeSheet();
+      else if(view!=='home')go('home');
       return;
     }
     if(e.target&&e.target.tagName==='INPUT')return;
-    if(!tour.hidden||!sheet.hidden||!psheet.hidden||!$('rules').hidden)return;
+    if(view!=='track'||!tour.hidden||!sheet.hidden||!psheet.hidden||!$('rules').hidden)return;
     if(e.key==='ArrowLeft')goTo(S.cur-1,true);
     else if(e.key==='ArrowRight')goTo(S.cur+1,true);
   });
   window.addEventListener('resize',function(){pager.scrollLeft=S.cur*pager.clientWidth;});
 
   buildSheetKeys();buildBoards();update();
-  var seenTour=false;
-  try{seenTour=!!localStorage.getItem(TOURKEY);}catch(e){}
-  if(!seenTour)tourOpen();
+  go('home');
 })();
 </script>
 
