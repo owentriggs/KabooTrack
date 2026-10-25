@@ -276,8 +276,9 @@ ol.steps li b{display:block;font-size:16px}
 .stand li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
 .stand li strong{flex:none;font:800 19px/1 var(--ui);font-variant-numeric:tabular-nums}
 .stand li.out strong{color:var(--warn)}
-.keyrow{display:flex;gap:6px;margin:0 0 8px}
-.keyrow input{flex:1;min-width:0;height:44px;padding:0 12px;border:1px solid var(--line);border-radius:12px;background:var(--felt);color:var(--ink);font:500 15px/1 var(--ui);user-select:text;-webkit-user-select:text}
+.scards .mc.chk{box-shadow:0 0 0 2px var(--panel),0 0 0 4px var(--warn)}
+.scards .mc.unk{background:var(--panel);border:1.5px dashed var(--warn);color:var(--warn)}
+.sprev{display:block;width:100%;margin-top:10px;border-radius:10px;border:1px solid var(--line)}
 #ksheet{z-index:28}
 
 @media (max-height:600px){
@@ -420,17 +421,21 @@ ol.steps li b{display:block;font-size:16px}
   </div>
 </div>
 
+<script src="scan.js"></script>
 <script>
 (function(){
   var BASE=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
   // Card values. Change here if your table plays different values.
   var VAL={A:1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,J:11,Q:12,K:15,Kr:-1,Jk:0};
   var FULLNAME={Kr:'Red king',Jk:'Joker'};
-  var STORE='kaboo-memory-v3',TOURKEY='kaboo-tour-v2',KEYSTORE='kaboo-api-key';
+  var STORE='kaboo-memory-v3',TOURKEY='kaboo-tour-v2';
   var MAXP=6,MINP=2,MAXC=9,MAXS=12;
   var TARGETS=[50,100,150,200],PENS=[0,5,10,20];
 
   function has(k){return Object.prototype.hasOwnProperty.call(VAL,k);}
+  // A scored card: a rank key, '?'+key for a scanned card worth checking, or '?' for one the scan could not read.
+  function scKey(x){return typeof x==='string'&&(x==='?'||has(x)||(x.charAt(0)==='?'&&has(x.slice(1))));}
+  function scBase(x){return x.charAt(0)==='?'?x.slice(1):x;}
   function lab(k){if(k==='Kr')return 'K♥♦';if(k==='K'&&S.rules.rk)return 'K♠♣';return k;}
   function val(k){var o=S.values&&S.values[k];return typeof o==='number'?o:VAL[k];}
   function fmtv(v){return v<0?'−'+(-v):String(v);}
@@ -451,7 +456,7 @@ ol.steps li b{display:block;font-size:16px}
         p.name=String(p.name||'').slice(0,10);
         var src=Array.isArray(p.cards)?p.cards.slice(0,MAXC):mkCards();
         p.cards=src.map(function(x){if(x==='Kd')x='Kr';return typeof x==='string'&&has(x)?x:null;});
-        p.sc=Array.isArray(p.sc)?p.sc.filter(function(x){return typeof x==='string'&&has(x);}).slice(0,MAXS):null;
+        p.sc=Array.isArray(p.sc)?p.sc.filter(scKey).slice(0,MAXS):null;
         p.hist=Array.isArray(p.hist)?p.hist.filter(function(n){return typeof n==='number'&&isFinite(n);}):[];
         p.called=p.called===true;
       });
@@ -477,6 +482,7 @@ ol.steps li b{display:block;font-size:16px}
   function save(){try{localStorage.setItem(STORE,JSON.stringify(S));}catch(e){}}
 
   var S=load()||fresh();
+  try{localStorage.removeItem('kaboo-api-key');}catch(e){} // left by the earlier online scanner; no longer used
   var hist=[],cards=[],chipBtns=[],stepMinus,stepPlus;
   var swapOn=false,swapFirst=null;
   var sheetKind=null,target=null;
@@ -1000,11 +1006,16 @@ ol.steps li b{display:block;font-size:16px}
   /* ---------- card scoring ---------- */
   var sbody=$('sbody'),scoreHint=$('score-hint'),saveBtn=$('score-save'),photoIn=$('photo');
   var scanState={},scanFor=null,kTarget=null,scoreFlash='',scoreFlashT=0;
-  function handTotal(list){return (list||[]).reduce(function(a,k){return a+val(k);},0);}
+  function handTotal(list){return (list||[]).reduce(function(a,k){k=scBase(k);return a+(k?val(k):0);},0);}
+  function unread(p){return (p.sc||[]).filter(function(k){return k==='?';}).length;}
+  function toCheck(p){return (p.sc||[]).filter(function(k){return k.length>1&&k.charAt(0)==='?';}).length;}
   function gameTotal(p){return p.hist.reduce(function(a,n){return a+n;},0);}
   function roundsPlayed(){return S.players.reduce(function(a,p){return Math.max(a,p.hist.length);},0);}
   function pname(p,i){return p.name||('P'+(i+1));}
-  function chip(k,attrs){return '<button type="button" class="mc f'+(k==='Kr'?' red':'')+'" '+attrs+'>'+(k==='Kr'?'K':k==='Jk'?'★':k)+'</button>';}
+  function chip(k,attrs){
+    var b=scBase(k),cls=k==='?'?' unk':(b!==k?' chk':'');
+    return '<button type="button" class="mc f'+(b==='Kr'?' red':'')+cls+'" '+attrs+'>'+(k==='?'?'?':b==='Kr'?'K':b==='Jk'?'★':b)+'</button>';
+  }
   function sflash(t){scoreFlash=t;clearTimeout(scoreFlashT);scoreFlashT=setTimeout(function(){scoreFlash='';renderScoreBar();},2600);}
   // Final points for this round, with the caller penalty applied.
   function roundScores(){
@@ -1027,7 +1038,10 @@ ol.steps li b{display:block;font-size:16px}
         +(entered?'<strong>'+fmtv(rs.pts[i])+'</strong> pts'+(rs.pen&&rs.ci===i?' (incl. +'+S.game.pen+')':''):'not entered')
         +'</span></div>';
       h+='<div class="scards">';
-      (p.sc||[]).forEach(function(k,j){h+=chip(k,'data-sc="'+i+':'+j+'" aria-label="'+esc(nameOf(k))+', '+fmtv(val(k))+' points. Tap to change"');});
+      (p.sc||[]).forEach(function(k,j){
+        var b=scBase(k),lbl=k==='?'?'Card '+(j+1)+' not read. Tap to set it':nameOf(b)+', '+fmtv(val(b))+' points'+(b!==k?', worth checking':'')+'. Tap to change';
+        h+=chip(k,'data-sc="'+i+':'+j+'" aria-label="'+esc(lbl)+'"');
+      });
       if(!p.sc||p.sc.length<MAXS)h+='<button type="button" class="mc add" data-sadd="'+i+'" aria-label="Add a card to '+esc(pname(p,i))+'">+</button>';
       h+='</div><div class="sbtns">'
         +'<button type="button" class="sbtn pri" data-scan="'+i+'"'+(ss.busy?' disabled':'')+'>'+(ss.busy?'Reading…':'Scan photo')+'</button>'
@@ -1035,6 +1049,7 @@ ol.steps li b{display:block;font-size:16px}
         +(entered?'<button type="button" class="sbtn" data-sclear="'+i+'">Clear</button>':'<button type="button" class="sbtn" data-szero="'+i+'">No cards</button>')
         +'</div>';
       if(ss.msg)h+='<p class="smsg'+(ss.err?' err':ss.busy?' busy':'')+'">'+esc(ss.msg)+'</p>';
+      if(ss.preview)h+='<img class="sprev" src="'+ss.preview+'" alt="The photo, with each card found outlined and numbered in reading order">';
       h+='</div>';
     });
     if(r){
@@ -1051,19 +1066,23 @@ ol.steps li b{display:block;font-size:16px}
       }
       h+='<p style="margin-top:12px"><button type="button" class="lbtn" data-sundo="1">Undo last saved round</button></p>';
     }
-    if(!apiKey())h+='<div class="note"><b>Photo scanning</b><p>To read cards from a photo, add an Anthropic API key in <a href="#" data-go="settings">Settings</a>. You can always tap cards in by hand with +.</p></div>';
+    if(!r)h+='<div class="note"><b>Photo tips</b><p>Lay the cards face up with a small gap between them, on a darker surface, and take the photo from straight above. Scanning happens on your phone, free and offline. Orange cards are worth a quick check, and ? cards could not be read: tap either to set it.</p></div>';
     sbody.innerHTML=h;sbody.scrollTop=st;
     renderScoreBar();
   }
   function renderScoreBar(){
     var missing=S.players.filter(function(p){return p.sc===null;}).length;
-    saveBtn.disabled=missing>0;
+    var unk=S.players.reduce(function(a,p){return a+unread(p);},0),chk=S.players.reduce(function(a,p){return a+toCheck(p);},0);
+    saveBtn.disabled=missing>0||unk>0;
     var t=scoreFlash;
-    if(!t)t=missing?missing+' hand'+(missing===1?'':'s')+' still to enter.':'All hands in. Save the round to add it to the standings.';
+    if(!t)t=missing?missing+' hand'+(missing===1?'':'s')+' still to enter.'
+      :unk?'Tap the ? card'+(unk===1?'':'s')+' to set '+(unk===1?'it':'them')+' before saving.'
+      :chk?'All hands in. Check the orange card'+(chk===1?'':'s')+', then save the round.'
+      :'All hands in. Save the round to add it to the standings.';
     scoreHint.textContent=t;scoreHint.className=scoreFlash?'live':'';
   }
   function saveRound(){
-    if(S.players.some(function(p){return p.sc===null;}))return;
+    if(S.players.some(function(p){return p.sc===null||unread(p)>0;}))return;
     var rs=roundScores();
     S.players.forEach(function(p,i){p.hist.push(rs.pts[i]);p.sc=null;p.called=false;});
     scanState={};save();
@@ -1078,7 +1097,7 @@ ol.steps li b{display:block;font-size:16px}
   sbody.addEventListener('click',function(e){
     var t=e.target.closest&&e.target.closest('button');if(!t)return;
     var d=t.dataset,p;
-    if(d.scan){scanFor=S.players[+d.scan];if(!apiKey()){scanState[scanFor.id]={err:true,msg:'Add your API key in Settings first, or tap + to enter cards by hand.'};renderScore();return;}photoIn.click();}
+    if(d.scan){scanFor=S.players[+d.scan];photoIn.click();}
     else if(d.call){p=S.players[+d.call];var on=!p.called;S.players.forEach(function(q){q.called=false;});p.called=on;save();renderScore();}
     else if(d.sclear){p=S.players[+d.sclear];p.sc=null;delete scanState[p.id];save();renderScore();}
     else if(d.szero){p=S.players[+d.szero];p.sc=[];save();renderScore();}
@@ -1106,7 +1125,7 @@ ol.steps li b{display:block;font-size:16px}
       b.addEventListener('click',function(){pickK(r.k);});
       kkeys.appendChild(b);
     });
-    $('ksheet-t').textContent=ci<0?'Add a card for '+pname(kTarget.p,pi):'Change this card';
+    $('ksheet-t').textContent=ci<0?'Add a card for '+pname(kTarget.p,pi):'Which card is this?';
     $('kextra').hidden=ci<0;
     ksheet.hidden=false;
   }
@@ -1125,92 +1144,45 @@ ol.steps li b{display:block;font-size:16px}
   ksheet.addEventListener('click',function(e){if(e.target===ksheet)closeK();});
 
   /* ---------- photo scanning ---------- */
-  // The photo goes straight from this device to the Anthropic API with the player's own key. Nothing else sees it.
-  var SCAN_MODEL='claude-opus-5-5';
-  var SCAN_RANKS=['A','2','3','4','5','6','7','8','9','10','J','Q','K','Joker'];
-  var SCAN_SCHEMA={type:'object',additionalProperties:false,required:['cards','problem'],properties:{
-    cards:{type:'array',items:{type:'object',additionalProperties:false,required:['rank','red'],properties:{
-      rank:{type:'string',enum:SCAN_RANKS},red:{type:'boolean'}}}},
-    problem:{type:'string'}}};
-  var SCAN_PROMPT='This photo was taken at the end of a round of Kaboo, a version of the card game Cabo. '
-    +'It shows one player\'s cards turned face up, usually laid out in a grid. '
-    +'List every face-up playing card in the photo exactly once, in reading order: top row left to right, then the next row. '
-    +'For each card give its rank, and set red to true when its suit is hearts or diamonds (for a joker, true if it is the red one). '
-    +'Look closely at each card\'s corner index so that 6 and 9, and 10 and J, are not confused. '
-    +'Ignore anything that is not a face-up card, such as the table, face-down cards or a deck. '
-    +'If no cards can be read, return an empty list and say why in problem, in one short sentence. Otherwise leave problem empty.';
-  function apiKey(){try{return localStorage.getItem(KEYSTORE)||'';}catch(e){return '';}}
-  function shrink(file){
-    return new Promise(function(res,rej){
-      var url=URL.createObjectURL(file),img=new Image();
-      img.onload=function(){
-        var w=img.naturalWidth,h=img.naturalHeight,s=Math.min(1,1568/Math.max(w,h));
-        var c=document.createElement('canvas');c.width=Math.max(1,Math.round(w*s));c.height=Math.max(1,Math.round(h*s));
-        c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-        URL.revokeObjectURL(url);
-        res(c.toDataURL('image/jpeg',0.85).split(',')[1]);
-      };
-      img.onerror=function(){URL.revokeObjectURL(url);rej(new Error('That photo could not be opened. Try another one.'));};
-      img.src=url;
-    });
-  }
-  function readCards(b64,key){
-    return fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{
-        'content-type':'application/json',
-        'x-api-key':key,
-        'anthropic-version':'2026-10-21',
-        'anthropic-beta':'server-side-fallback-2026-07-01',
-        'anthropic-dangerous-direct-browser-access':'true'
-      },
-      body:JSON.stringify({
-        model:SCAN_MODEL,max_tokens:16000,fallbacks:'default',
-        output_config:{effort:'medium',format:{type:'json_schema',schema:SCAN_SCHEMA}},
-        messages:[{role:'user',content:[
-          {type:'image',source:{type:'base64',media_type:'image/jpeg',data:b64}},
-          {type:'text',text:SCAN_PROMPT}
-        ]}]
-      })
-    }).catch(function(){throw new Error('Could not reach the card reader. Check your connection.');})
-    .then(function(res){
-      return res.json().catch(function(){return {};}).then(function(body){
-        if(res.status===401||res.status===403)throw new Error('The API key was not accepted. Check it in Settings.');
-        if(res.status===429)throw new Error('Too many scans at once. Wait a moment and try again.');
-        if(res.status>=500)throw new Error('The card reader is busy. Try again in a moment.');
-        if(!res.ok)throw new Error((body.error&&body.error.message)||('The card reader returned an error ('+res.status+').'));
-        if(body.stop_reason==='refusal')throw new Error('The card reader could not read this photo. Enter the cards by hand.');
-        var txt=(body.content||[]).filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
-        var out;try{out=JSON.parse(txt);}catch(e){throw new Error('The card reader gave an answer the app could not use. Try again.');}
-        return out;
-      });
-    });
-  }
-  function toKeys(out){
-    return (out.cards||[]).map(function(c){
-      if(c.rank==='Joker')return 'Jk';
-      if(c.rank==='K'&&c.red&&S.rules.rk)return 'Kr';
-      return has(c.rank)?c.rank:null;
-    }).filter(Boolean).slice(0,MAXS);
+  // scan.js reads the cards on this device: free, no account, works offline.
+  function toKeys(cards){
+    return cards.map(function(c){
+      var k=null;
+      if(c.rank==='Joker')k='Jk';
+      else if(c.rank==='K'&&c.red&&S.rules.rk)k='Kr';
+      else if(c.rank&&has(c.rank))k=c.rank;
+      if(!k)return '?';
+      return c.sure?k:'?'+k;
+    }).slice(0,MAXS);
   }
   photoIn.addEventListener('change',function(){
     var f=photoIn.files&&photoIn.files[0],p=scanFor;
     photoIn.value='';scanFor=null;
     if(!f||!p)return;
-    if(navigator.onLine===false){scanState[p.id]={err:true,msg:'Scanning needs an internet connection. Tap + to enter cards by hand.'};renderScore();return;}
-    scanState[p.id]={busy:true,msg:'Reading the cards. This takes a few seconds.'};renderScore();
-    shrink(f).then(function(b64){return readCards(b64,apiKey());}).then(function(out){
-      var keys=toKeys(out);
-      if(!keys.length){scanState[p.id]={err:true,msg:out.problem||'No cards found. Try a closer, brighter photo, or tap + to add them.'};}
-      else{
-        p.sc=keys;save();
-        scanState[p.id]={msg:keys.length+' card'+(keys.length===1?'':'s')+' found, '+fmtv(handTotal(keys))+' points. Tap a card if it was misread.'};
-      }
-      if(view==='score')renderScore();
-    }).catch(function(err){
-      scanState[p.id]={err:true,msg:err.message};
-      if(view==='score')renderScore();
-    });
+    if(!window.KabooScan){scanState[p.id]={err:true,msg:'The card reader did not load. Reopen the app, or tap + to enter cards by hand.'};renderScore();return;}
+    scanState[p.id]={busy:true,msg:'Reading the cards…'};renderScore();
+    // let the busy state paint before the heavy work starts
+    setTimeout(function(){
+      KabooScan.read(f).then(function(res){
+        var keys=toKeys(res.cards);
+        if(!keys.length){
+          scanState[p.id]={err:true,preview:res.preview,msg:'No cards found. Try again from straight above, on a darker surface, with a small gap between cards. Or tap + to add them.'};
+        }else{
+          p.sc=keys;save();
+          var unk=unread(p),chk=toCheck(p);
+          var msg=keys.length+' card'+(keys.length===1?'':'s')+' found';
+          if(unk)msg+=', '+unk+' not read: tap the ? to set '+(unk===1?'it':'them');
+          if(chk)msg+=(unk?', and ':', ')+chk+' worth checking (orange)';
+          if(!unk&&!chk)msg+='. If one was misread, tap it';
+          msg+='. Wrong number of cards? Check the outlines below.';
+          scanState[p.id]={msg:msg,preview:res.preview};
+        }
+        if(view==='score')renderScore();
+      }).catch(function(err){
+        scanState[p.id]={err:true,msg:(err&&err.message)||'That photo could not be read. Try another one.'};
+        if(view==='score')renderScore();
+      });
+    },30);
   });
 
   /* ---------- settings ---------- */
@@ -1219,7 +1191,7 @@ ol.steps li b{display:block;font-size:16px}
     return '<div class="opts">'+list.map(function(v){return '<button type="button" class="opt" data-'+name+'="'+v+'" aria-pressed="'+(v===cur)+'">'+fmt(v)+'</button>';}).join('')+'</div>';
   }
   function renderSettings(){
-    var st=setbody.scrollTop,key=apiKey();
+    var st=setbody.scrollTop;
     var rk=ranks().map(function(r){
       return '<button type="button" class="vi'+(r.k==='Kr'?' red':'')+(editK===r.k?' on':'')+'" data-v="'+r.k+'" aria-pressed="'+(editK===r.k)+'" aria-label="'+nameOf(r.k)+', '+fmtv(r.v)+' points"><b>'+lab(r.k)+'</b><i>'+fmtv(r.v)+'</i></button>';
     }).join('');
@@ -1238,11 +1210,8 @@ ol.steps li b{display:block;font-size:16px}
       +'<div class="sw col"><div><h4>Game ends at</h4><p>The game is over once anyone reaches this total. Lowest total wins.</p></div>'+opts('target',TARGETS,S.game.target,String)+'</div>'
       +'<div class="sw col"><div><h4>Kaboo caller penalty</h4><p>Added to the caller’s score if someone ties or beats them.</p></div>'+opts('pen',PENS,S.game.pen,function(v){return v?'+'+v:'Off';})+'</div>'
       +'<h3>Photo scanning</h3>'
-      +'<p>Card Scoring reads cards from a photo using Claude, Anthropic’s AI. It needs your own Anthropic API key, which you can create at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>. Each scan costs about a cent.</p>'
-      +'<div class="keyrow"><input id="keyin" type="password" autocomplete="off" spellcheck="false" placeholder="'+(key?'Key saved ('+esc(key.slice(0,10))+'…)':'sk-ant-…')+'" aria-label="Anthropic API key">'
-      +'<button type="button" class="lbtn" data-keysave="1">Save</button></div>'
-      +(key?'<p><button type="button" class="lbtn" data-keyclear="1">Remove key</button></p>':'')
-      +'<p class="vhint">The key is kept only on this device. Photos go straight from here to Anthropic and nowhere else.</p>'
+      +'<p>Card Scoring reads the cards in a photo right here on your phone. It is free, needs no account and works offline. Photos never leave the device.</p>'
+      +'<p>For the best results lay the cards face up with a small gap between them, on a surface darker than the cards, and shoot from straight above in good light. Cards it is unsure of show in orange, and any it could not read show as ?. Tap either to set it.</p>'
       +'<h3>Help</h3>'
       +'<p><button type="button" class="lbtn" data-act="tour">Replay the welcome tour</button></p>';
     setbody.scrollTop=st;
@@ -1254,16 +1223,7 @@ ol.steps li b{display:block;font-size:16px}
     if(d.target){S.game.target=+d.target;save();renderSettings();}
     else if(d.pen!==undefined){S.game.pen=+d.pen;save();renderSettings();}
     else if(d.allreset){S.values={};editK=null;save();update();renderSettings();}
-    else if(d.keysave){
-      var v=$('keyin').value.trim();
-      if(v){try{localStorage.setItem(KEYSTORE,v);}catch(err){}}
-      renderSettings();
-    }
-    else if(d.keyclear){try{localStorage.removeItem(KEYSTORE);}catch(err){}renderSettings();}
     else if(d.act==='tour'){tourOpen();}
-  });
-  setbody.addEventListener('keydown',function(e){
-    if(e.key==='Enter'&&e.target.id==='keyin'){var b=setbody.querySelector('[data-keysave]');if(b)b.click();}
   });
 
   /* ---------- welcome tour ---------- */

@@ -9,9 +9,9 @@ A one-page app for **Kaboo** (a version of the card game Cabo). It opens on a ho
 
 ### Photo scanning
 
-Reading cards from a photo uses Claude, Anthropic's AI. Add your own Anthropic API key (from [console.anthropic.com](https://console.anthropic.com/settings/keys)) in **Settings → Photo scanning**. The key is stored only in your browser, and photos go straight from your phone to Anthropic's API. Each scan costs about a cent. Without a key, Card Scoring still works by tapping in the cards.
+Card Scoring reads the cards in a photo entirely on your phone (`scan.js`). It's free, needs no account or API key, works offline, and photos never leave the device. It finds each white card against the table, straightens it, and reads the rank in its corner by comparing it with ranks drawn in several fonts.
 
-It's a single static web page with no build step and no server. Everything is saved in your browser on your own device.
+For best results, lay the cards face up with a small gap between them, on a surface darker than the cards, and take the photo from straight above in good light. Cards it's unsure of show in orange, and any it couldn't read show as **?**: tap either to set it. The photo is shown with each card it found outlined and numbered, so you can see if one was missed.
 
 ## Put it online with GitHub Pages
 
@@ -41,6 +41,7 @@ Open `index.html` in a browser. (Offline mode needs the page served over HTTPS o
 | File | What it is |
 | --- | --- |
 | `index.html` | The whole app |
+| `scan.js` | Reads cards from a photo, on the device |
 | `manifest.webmanifest`, `icon*.png`, `icon.svg` | App name and icons for installing it |
 | `sw.js` | Offline support (service worker) |
 | `.github/workflows/pages.yml` | Publishes the site to GitHub Pages |
